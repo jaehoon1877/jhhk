@@ -496,7 +496,7 @@ const config = {
     },
     scale: {
         mode: Phaser.Scale.FIT, // 자동 크기 조정
-        autoCenter: Phaser.Scale.CENTER_BOTH, // 화면 중앙 정렬
+        // autoCenter: Phaser.Scale.CENTER_BOTH, // 화면 중앙 정렬
     },
     scene: [EntranceScene, GalleryScene]
 };

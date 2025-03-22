@@ -1048,6 +1048,9 @@ const config = {
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
+        parent: 'game-container', // 캔버스를 #game-container 안에 배치
+        width: 800,
+        height: 600
     },
     scene: [EntranceScene, ReceptionScene, GalleryScene]
 };

@@ -1,4 +1,4 @@
-// EntranceScene 정의
+// EntranceScene 정의 (변경 없음)
 class EntranceScene extends Phaser.Scene {
     constructor() {
         super({ key: 'EntranceScene' });
@@ -273,17 +273,19 @@ class ReceptionScene extends Phaser.Scene {
 
         // 터치 입력 처리
         this.input.on('pointerdown', (pointer) => {
-            if (this.physics.world.overlap(this.player, this.npcZone) && !this.isInteracting) {
-                this.handleNpcInteraction();
-            } else if (this.isInteracting && this.isTextComplete) {
-                this.hideDescription();
-                this.scene.start('GalleryScene', { returnToEntrance: false });
-            }
-            if (!this.isInteracting) {
-                this.targetPosition.x = pointer.x;
-                this.targetPosition.y = pointer.y;
-                this.isMovingX = true;
-                this.isTouchInputActive = true; // 터치 입력 활성화
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Touch: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (!this.isInteracting) {
+                if (this.physics.world.overlap(this.player, this.npcZone)) {
+                    this.handleNpcInteraction();
+                } else {
+                    this.targetPosition.x = pointer.x;
+                    this.targetPosition.y = pointer.y;
+                    this.isMovingX = true;
+                    this.isTouchInputActive = true; // 터치 입력 활성화
+                }
             }
         });
 
@@ -296,17 +298,21 @@ class ReceptionScene extends Phaser.Scene {
 
         // Spacebar 입력 설정
         this.input.keyboard.on('keydown-SPACE', () => {
-            if (this.physics.world.overlap(this.player, this.npcZone) && !this.isInteracting) {
-                this.handleNpcInteraction();
-            } else if (this.isInteracting && this.isTextComplete) {
-                this.hideDescription();
-                this.scene.start('GalleryScene', { returnToEntrance: false });
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Space: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (!this.isInteracting) {
+                if (this.physics.world.overlap(this.player, this.npcZone)) {
+                    this.handleNpcInteraction();
+                }
             }
         });
 
         // 초기 상태
         this.isInteracting = false;
-        this.isTextComplete = false; // 초기화 추가
+        this.isWaitingForInput = false; // ▼ 표시 대기 상태
+        this.continueTyping = false; // 텍스트 이어쓰기 상태
     }
 
     update() {
@@ -400,9 +406,17 @@ class ReceptionScene extends Phaser.Scene {
         dialogText.setDepth(11);
 
         this.isInteracting = true;
-        this.isTextComplete = false;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.arrowIndicator = this.add.text(650, 550, '▼', {
+            fontSize: '16px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
         this.typeText(text, dialogText, this, () => {
-            this.isTextComplete = true;
+            this.scene.start('GalleryScene', { returnToEntrance: false });
         });
 
         this.dialogBox = dialogBox;
@@ -414,51 +428,134 @@ class ReceptionScene extends Phaser.Scene {
             this.dialogBox.destroy();
             this.dialogText.destroy();
         }
+        if (this.arrowIndicator) {
+            if (this.arrowIndicatorBlinkEvent) {
+                this.arrowIndicatorBlinkEvent.remove();
+            }
+            this.arrowIndicator.destroy();
+        }
         this.dialogBox = null;
         this.dialogText = null;
+        this.arrowIndicator = null;
+        this.arrowIndicatorBlinkEvent = null;
         this.isInteracting = false;
-        this.isTextComplete = false;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
     }
- 
+
     typeText(text, targetText, scene, callback) {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
         const typingSpeed = 100;
-    
-        const typeEvent = scene.time.addEvent({
-            delay: typingSpeed,
-            callback: () => {
-                if (currentIndex < text.length) {
-                    targetText.setText(targetText.text + text[currentIndex]);
-                    currentIndex++;
-                    letEnterIdx++;
-                    if (text[currentIndex] === '\n') {
-                        letEnterIdx = 0;
-                        line_cnt++;
-                        if (line_cnt > 2) {
-                            targetText.setText('');
-                            line_cnt = 1;
+
+        const typeNextChar = () => {
+            // 텍스트 출력이 완료된 경우
+            if (currentIndex >= text.length) {
+                // ▼ 표시를 띄우고 입력 대기
+                console.log('Text fully displayed, waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
                         }
-                    } else if (letEnterIdx > 20) {
-                        targetText.setText(targetText.text + '\n');
-                        letEnterIdx = 0;
-                        line_cnt++;
-                        if (line_cnt > 2) {
-                            targetText.setText('');
-                            line_cnt = 1;
+                    },
+                    loop: true
+                });
+            }
+
+            // ▼ 표시 중 사용자 입력 대기
+            if (scene.isWaitingForInput) {
+                if (scene.continueTyping) {
+                    console.log('Continuing typing after user input');
+                    if (currentIndex >= text.length) {
+                        // 텍스트가 모두 출력된 경우, 콜백 호출 후 대화창 닫기
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
                         }
+                        scene.arrowIndicator.setVisible(false);
+                        if (callback) {
+                            callback();
+                            console.log('Callback executed, currentIndex:', currentIndex, 'text.length:', text.length);
+                        }
+                        return; // 루프 종료
+                    } else {
+                        // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        targetText.setText(''); // 텍스트 초기화
+                        letEnterIdx = 0;
+                        line_cnt = 1;
+                        scene.isWaitingForInput = false;
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
+                        }
+                        scene.arrowIndicator.setVisible(false);
+                        scene.continueTyping = false;
                     }
                 } else {
-                    typeEvent.remove();
-                    if (callback) {
-                        callback();
-                        console.log('Callback executed, currentIndex:', currentIndex, 'text.length:', text.length);
-                    }
+                    // 사용자 입력을 기다리는 동안 루프 유지
+                    scene.time.delayedCall(typingSpeed, typeNextChar);
+                    return;
                 }
-            },
-            repeat: text.length
-        });
+            }
+
+            // 2줄 초과 시 ▼ 표시
+            if (line_cnt >= 3) {
+                console.log('Waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                scene.time.delayedCall(typingSpeed, typeNextChar);
+                return;
+            }
+
+            // 다음 글자 출력
+            targetText.setText(targetText.text + text[currentIndex]);
+            currentIndex++;
+            letEnterIdx++;
+
+            // 줄바꿈 처리
+            if (text[currentIndex] === '\n') {
+                letEnterIdx = 0;
+                line_cnt++;
+            } else if (letEnterIdx == 20) {
+                letEnterIdx = 0;
+                line_cnt++;
+                if (line_cnt < 3) {
+                    targetText.setText(targetText.text + '\n');
+                }
+            }
+
+            // 다음 글자 출력
+            scene.time.delayedCall(typingSpeed, typeNextChar);
+        };
+
+        // 첫 글자부터 시작
+        typeNextChar();
     }
 
     handleNpcInteraction() {
@@ -552,11 +649,29 @@ class GalleryScene extends Phaser.Scene {
 
         // 터치 입력 처리
         this.input.on('pointerdown', (pointer) => {
-            if (!this.isInteracting) {
-                this.targetPosition.x = pointer.x;
-                this.targetPosition.y = pointer.y;
-                this.isMovingX = true;
-                this.isTouchInputActive = true; // 터치 입력 활성화
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Touch: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (!this.isInteracting) {
+                let isPaintingClicked = false;
+                this.paintingZones.forEach((zone, index) => {
+                    const zoneBounds = zone.getBounds();
+                    if (this.physics.world.overlap(this.player, zone) && 
+                        Phaser.Geom.Rectangle.ContainsPoint(zoneBounds, { x: pointer.x, y: pointer.y })) {
+                        console.log('Painting clicked at index:', index);
+                        this.checkPaintingInteraction();
+                        isPaintingClicked = true;
+                    }
+                });
+                // 그림 zone 외부 클릭 시 이동
+                if (!isPaintingClicked) {
+                    console.log('Moving to:', pointer.x, pointer.y);
+                    this.targetPosition.x = pointer.x;
+                    this.targetPosition.y = pointer.y;
+                    this.isMovingX = true;
+                    this.isTouchInputActive = true;
+                }
             }
         });
 
@@ -591,21 +706,25 @@ class GalleryScene extends Phaser.Scene {
 
         // Spacebar 입력 설정
         this.input.keyboard.on('keydown-SPACE', () => {
-            if (this.isInteracting) {
-                this.hideDescription();
-            } else {
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Space: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (!this.isInteracting) {
                 this.checkPaintingInteraction();
             }
         });
 
         // 초기 상태
         this.isInteracting = false;
+        this.isWaitingForInput = false; // ▼ 표시 대기 상태
+        this.continueTyping = false; // 텍스트 이어쓰기 상태
         this.currentPaintingDesc = null;
         this.currentZone = null;
 
         // 그림 설정
         const paintings = [
-            { x: 130, y: 150, x_zone: 100, y_zone: 50, key: 'painting1', desc: '해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당', imageKey: 'painting1' },
+            { x: 130, y: 150, x_zone: 100, y_zone: 50, key: 'painting1', desc: '해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당', imageKey: 'painting1' },
             { x: 285, y: 150, x_zone: 30, y_zone: 50, key: 'painting2', desc: 'An abstract art piece.', imageKey: 'painting2' },
             { x: 400, y: 150, x_zone: 60, y_zone: 50, key: 'painting3', desc: 'A starry night scene.', imageKey: 'painting3' },
             { x: 525, y: 150, x_zone: 30, y_zone: 50, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting4' },
@@ -621,6 +740,7 @@ class GalleryScene extends Phaser.Scene {
             this.physics.add.existing(zone);
             this.physics.add.overlap(this.player, zone, () => {
                 this.currentZone = zone;
+                console.log('Player overlapped with painting zone:', index);
             });
             this.paintingZones.push(zone);
 
@@ -734,7 +854,7 @@ class GalleryScene extends Phaser.Scene {
         frame.setStrokeStyle(10, 0x8B4513, 1);
 
         const dialogBox = this.add.rectangle(400, 550, 600, 100, 0x000000, 0.8);
-        const dialogText = this.add.text(400, 550, text, { 
+        const dialogText = this.add.text(400, 550, '', { 
             fontSize: '16px', 
             color: '#fff', 
             align: 'center', 
@@ -743,6 +863,20 @@ class GalleryScene extends Phaser.Scene {
 
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
+
+        this.isInteracting = true;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.arrowIndicator = this.add.text(650, 550, '▼', {
+            fontSize: '16px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        this.typeText(text, dialogText, this, () => {
+            // 콜백에서 대화창을 닫음
+        });
 
         this.dialogBox = dialogBox;
         this.dialogText = dialogText;
@@ -762,10 +896,136 @@ class GalleryScene extends Phaser.Scene {
         if (this.frame) {
             this.frame.destroy();
         }
+        if (this.arrowIndicator) {
+            if (this.arrowIndicatorBlinkEvent) {
+                this.arrowIndicatorBlinkEvent.remove();
+            }
+            this.arrowIndicator.destroy();
+        }
         this.isInteracting = false;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
         this.currentPaintingDesc = null;
         this.currentPaintingImage = null;
         this.frame = null;
+        this.arrowIndicator = null;
+        this.arrowIndicatorBlinkEvent = null;
+    }
+
+    typeText(text, targetText, scene, callback) {
+        let currentIndex = 0;
+        let letEnterIdx = 0;
+        let line_cnt = 1;
+        const typingSpeed = 100;
+
+        const typeNextChar = () => {
+            // 텍스트 출력이 완료된 경우
+            if (currentIndex >= text.length) {
+                // ▼ 표시를 띄우고 입력 대기
+                console.log('Text fully displayed, waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+            }
+
+            // ▼ 표시 중 사용자 입력 대기
+            if (scene.isWaitingForInput) {
+                if (scene.continueTyping) {
+                    console.log('Continuing typing after user input');
+                    if (currentIndex >= text.length) {
+                        // 텍스트가 모두 출력된 경우, 콜백 호출 후 대화창 닫기
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
+                        }
+                        scene.arrowIndicator.setVisible(false);
+                        if (callback) {
+                            callback();
+                            console.log('Callback executed, currentIndex:', currentIndex, 'text.length:', text.length);
+                        }
+                        scene.hideDescription(); // 대화창 닫기
+                        return; // 루프 종료
+                    } else {
+                        // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        targetText.setText(''); // 텍스트 초기화
+                        letEnterIdx = 0;
+                        line_cnt = 1;
+                        scene.isWaitingForInput = false;
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
+                        }
+                        scene.arrowIndicator.setVisible(false);
+                        scene.continueTyping = false;
+                    }
+                } else {
+                    // 사용자 입력을 기다리는 동안 루프 유지
+                    scene.time.delayedCall(typingSpeed, typeNextChar);
+                    return;
+                }
+            }
+
+            // 2줄 초과 시 ▼ 표시
+            if (line_cnt >= 3) {
+                console.log('Waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                scene.time.delayedCall(typingSpeed, typeNextChar);
+                return;
+            }
+
+            // 다음 글자 출력
+            targetText.setText(targetText.text + text[currentIndex]);
+            currentIndex++;
+            letEnterIdx++;
+
+            // 줄바꿈 처리
+            if (text[currentIndex] === '\n') {
+                letEnterIdx = 0;
+                line_cnt++;
+            } else if (letEnterIdx == 20) {
+                letEnterIdx = 0;
+                line_cnt++;
+                if (line_cnt < 3) {
+                    targetText.setText(targetText.text + '\n');
+                }
+            }
+
+            // 다음 글자 출력
+            scene.time.delayedCall(typingSpeed, typeNextChar);
+        };
+
+        // 첫 글자부터 시작
+        typeNextChar();
     }
 
     shutdown() {

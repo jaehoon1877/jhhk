@@ -77,7 +77,20 @@ class EntranceScene extends Phaser.Scene {
         });
 
         // 벽 설정 (현재는 없지만 확장성을 위해 추가)
-        this.walls = [];
+        this.walls = [
+            this.physics.add.staticBody(310, 250, 40, 40),
+            this.physics.add.staticBody(460, 250, 40, 40),
+
+            this.physics.add.staticBody(310, 290, 10, 90),
+            this.physics.add.staticBody(490, 290, 10, 90),
+            this.physics.add.staticBody(0, 380, 310, 10),
+            this.physics.add.staticBody(490, 380, 310, 10),
+
+            this.physics.add.staticBody(310, 490, 10, 110),
+            this.physics.add.staticBody(490, 490, 10, 110),
+            this.physics.add.staticBody(0, 490, 310, 10),
+            this.physics.add.staticBody(490, 490, 310, 10),
+        ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 // 벽에 충돌 시 목표 경로를 현재 위치로 변경
@@ -88,8 +101,9 @@ class EntranceScene extends Phaser.Scene {
             });
         });
 
+
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
-        this.entryZone = this.add.zone(400, 220, 100, 50);
+        this.entryZone = this.add.zone(405, 220, 105, 50);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
             this.scene.start('ReceptionScene', { returnToEntrance: true });
@@ -259,7 +273,13 @@ class ReceptionScene extends Phaser.Scene {
 
         // 이동 불가능 영역 (벽면) 설정
         this.walls = [
+            this.physics.add.staticBody(260, 230, 50, 50),
+            this.physics.add.staticBody(500, 230, 50, 50),
             this.physics.add.staticBody(0, 150, 800, 80),
+            this.physics.add.staticBody(0, 525, 310, 75),
+            this.physics.add.staticBody(500, 525, 300, 75),
+            this.physics.add.staticBody(0, 0, 120, 600),
+            this.physics.add.staticBody(685, 0, 120, 600),
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
@@ -269,6 +289,13 @@ class ReceptionScene extends Phaser.Scene {
                 this.isMovingX = false;
                 this.player.anims.stop(); // 애니메이션 정지
             });
+        });
+
+        // 갤러리 입구 Zone (ReceptionScene으로 이동)
+        this.entryZone = this.add.zone(410, 600, 190, 10);
+        this.physics.add.existing(this.entryZone);
+        this.physics.add.overlap(this.player, this.entryZone, () => {
+            this.scene.start('EntranceScene', { returnToEntrance: true });
         });
 
         // 터치 입력 처리
@@ -696,12 +723,12 @@ class GalleryScene extends Phaser.Scene {
         });
 
         // 출구 Zone
-        this.exitZone = this.add.zone(335, 600, 200, 5);
+        this.exitZone = this.add.zone(410, 600, 130, 5);
         this.physics.add.existing(this.exitZone);
         this.physics.add.overlap(this.player, this.exitZone, () => {
             this.player.setVelocity(0);
             this.player.anims.stop();
-            this.scene.start('EntranceScene', { returnToEntrance: true });
+            this.scene.start('ReceptionScene', { returnToEntrance: true });
         });
 
         // Spacebar 입력 설정
@@ -1043,7 +1070,10 @@ const config = {
     height: 600,
     physics: {
         default: 'arcade',
-        arcade: { gravity: { y: 0 } }
+        arcade: {
+             gravity: { y: 0 } ,
+             debug:true
+            }
     },
     scale: {
         mode: Phaser.Scale.FIT,

@@ -1,4 +1,5 @@
-// EntranceScene 정의 (변경 없음)
+
+
 class EntranceScene extends Phaser.Scene {
     constructor() {
         super({ key: 'EntranceScene' });
@@ -66,26 +67,59 @@ class EntranceScene extends Phaser.Scene {
         this.isMovingX = false;
         this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
 
+        // NPC 생성 (위치: x: 400, y: 430)
+        this.npc = this.physics.add.sprite(400, 430, 'player');
+        this.npc.setImmovable(true);
+        this.npc.setFrame(59); // NPC 스프라이트 프레임
+
+        // NPC 상호작용 Zone
+        this.npcZone = this.add.zone(400, 430, 70, 70);
+        this.physics.add.existing(this.npcZone);
+        this.physics.add.overlap(this.player, this.npcZone, () => {
+            // 상호작용 프롬프트 표시 (필요 시 추가 가능)
+        }, null, this);
+
         // 터치 입력 처리
         this.input.on('pointerdown', (pointer) => {
-            if (!this.isInteracting) {
-                this.targetPosition.x = pointer.x;
-                this.targetPosition.y = pointer.y;
-                this.isMovingX = true;
-                this.isTouchInputActive = true; // 터치 입력 활성화
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Touch: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (!this.isInteracting) {
+                if (this.physics.world.overlap(this.player, this.npcZone) &&
+                    Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handleNpcInteraction();
+                } else {
+                    this.targetPosition.x = pointer.x;
+                    this.targetPosition.y = pointer.y;
+                    this.isMovingX = true;
+                    this.isTouchInputActive = true; // 터치 입력 활성화
+                }
             }
         });
 
-        // 벽 설정 (현재는 없지만 확장성을 위해 추가)
+        // Spacebar 입력 설정
+        this.input.keyboard.on('keydown-SPACE', () => {
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Space: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (!this.isInteracting) {
+                if (this.physics.world.overlap(this.player, this.npcZone)) {
+                    this.handleNpcInteraction();
+                }
+            }
+        });
+
+        // 벽 설정
         this.walls = [
+            this.physics.add.staticBody(385, 415, 30, 30), // NPC
             this.physics.add.staticBody(310, 250, 40, 40),
             this.physics.add.staticBody(460, 250, 40, 40),
-
             this.physics.add.staticBody(310, 290, 10, 90),
             this.physics.add.staticBody(490, 290, 10, 90),
             this.physics.add.staticBody(0, 380, 310, 10),
             this.physics.add.staticBody(490, 380, 310, 10),
-
             this.physics.add.staticBody(310, 490, 10, 110),
             this.physics.add.staticBody(490, 490, 10, 110),
             this.physics.add.staticBody(0, 490, 310, 10),
@@ -101,7 +135,6 @@ class EntranceScene extends Phaser.Scene {
             });
         });
 
-
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
         this.entryZone = this.add.zone(405, 220, 105, 50);
         this.physics.add.existing(this.entryZone);
@@ -111,6 +144,9 @@ class EntranceScene extends Phaser.Scene {
 
         // 초기 상태
         this.isInteracting = false;
+        this.isWaitingForInput = false; // ▼ 표시 대기 상태
+        this.continueTyping = false; // 텍스트 이어쓰기 상태
+        this.hasTalkedToNpc = false; // NPC와 대화했는지 여부를 추적하는 플래그
     }
 
     update() {
@@ -191,10 +227,197 @@ class EntranceScene extends Phaser.Scene {
         this.player.setVelocity(velocityX, velocityY);
     }
 
+    // 대화창 표시 메서드 (ReceptionScene에서 복사)
+    showDescription(text, imageKey) {
+        const dialogBox = this.add.rectangle(400, 550, 600, 80, 0x000000, 0.8);
+        const dialogText = this.add.text(400, 550, '', { 
+            fontSize: '16px', 
+            color: '#fff', 
+            align: 'center', 
+            wordWrap: { width: 580 }
+        }).setOrigin(0.5);
+
+        dialogBox.setDepth(10);
+        dialogText.setDepth(11);
+
+        this.isInteracting = true;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.arrowIndicator = this.add.text(650, 550, '▼', {
+            fontSize: '16px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        this.typeText(text, dialogText, this, () => {
+            // 대화가 끝난 후 NPC와 대화한 것으로 표시
+            this.hasTalkedToNpc = true;
+        });
+
+        this.dialogBox = dialogBox;
+        this.dialogText = dialogText;
+    }
+
+    // 대화창 숨김 메서드 (ReceptionScene에서 복사)
+    hideDescription() {
+        if (this.dialogBox && this.dialogText) {
+            this.dialogBox.destroy();
+            this.dialogText.destroy();
+        }
+        if (this.arrowIndicator) {
+            if (this.arrowIndicatorBlinkEvent) {
+                this.arrowIndicatorBlinkEvent.remove();
+            }
+            this.arrowIndicator.destroy();
+        }
+        this.dialogBox = null;
+        this.dialogText = null;
+        this.arrowIndicator = null;
+        this.arrowIndicatorBlinkEvent = null;
+        this.isInteracting = false;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+    }
+
+    // 텍스트 타이핑 메서드 (ReceptionScene에서 복사)
+    typeText(text, targetText, scene, callback) {
+        let currentIndex = 0;
+        let letEnterIdx = 0;
+        let line_cnt = 1;
+        const typingSpeed = 100;
+
+        const typeNextChar = () => {
+            // 텍스트 출력이 완료된 경우
+            if (currentIndex >= text.length) {
+                // ▼ 표시를 띄우고 입력 대기
+                console.log('Text fully displayed, waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+            }
+
+            // ▼ 표시 중 사용자 입력 대기
+            if (scene.isWaitingForInput) {
+                if (scene.continueTyping) {
+                    console.log('Continuing typing after user input');
+                    if (currentIndex >= text.length) {
+                        // 텍스트가 모두 출력된 경우, 콜백 호출 후 대화창 닫기
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
+                        }
+                        scene.arrowIndicator.setVisible(false);
+                        if (callback) {
+                            callback();
+                            console.log('Callback executed, currentIndex:', currentIndex, 'text.length:', text.length);
+                        }
+                        scene.hideDescription(); // 대화창 닫기
+                        return; // 루프 종료
+                    } else {
+                        // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        targetText.setText(''); // 텍스트 초기화
+                        letEnterIdx = 0;
+                        line_cnt = 1;
+                        scene.isWaitingForInput = false;
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
+                        }
+                        scene.arrowIndicator.setVisible(false);
+                        scene.continueTyping = false;
+                    }
+                } else {
+                    // 사용자 입력을 기다리는 동안 루프 유지
+                    scene.time.delayedCall(typingSpeed, typeNextChar);
+                    return;
+                }
+            }
+
+            // 2줄 초과 시 ▼ 표시
+            if (line_cnt >= 3) {
+                console.log('Waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                scene.time.delayedCall(typingSpeed, typeNextChar);
+                return;
+            }
+
+            // 다음 글자 출력
+            targetText.setText(targetText.text + text[currentIndex]);
+            currentIndex++;
+            letEnterIdx++;
+
+            // 줄바꿈 처리
+            if (text[currentIndex] === '\n') {
+                letEnterIdx = 0;
+                line_cnt++;
+            } else if (letEnterIdx == 20) {
+                letEnterIdx = 0;
+                line_cnt++;
+                if (line_cnt < 3) {
+                    targetText.setText(targetText.text + '\n');
+                }
+            }
+
+            // 다음 글자 출력
+            scene.time.delayedCall(typingSpeed, typeNextChar);
+        };
+
+        // 첫 글자부터 시작
+        typeNextChar();
+    }
+
+    // NPC 상호작용 처리 메서드 (조건부 대화 추가)
+    handleNpcInteraction() {
+        this.isInteracting = true;
+        let dialogText;
+        if (!this.hasTalkedToNpc) {
+            // 첫 대화
+            dialogText = '안녕하세요 하경님, 만나서 반가워요!\n재훈님이 이 입장권을 전달해달라고 부탁하셨어요. 이거를 가지고 갤러리 안으로 들어가시면 안내원이 입장을 도와주실거예요 ^^';
+        } else {
+            // 두 번째 대화 (이후 반복)
+            dialogText = '갤러리 안으로 들어가시면 안내원이 입장을 도와주실거예요 ^^';
+        }
+        this.showDescription(dialogText, null);
+    }
+
     shutdown() {
         if (this.entranceBgm) {
             this.entranceBgm.stop();
             this.entranceBgm.destroy();
+        }
+        if (this.interactionText) {
+            this.interactionText.destroy();
         }
     }
 }
@@ -588,7 +811,7 @@ class ReceptionScene extends Phaser.Scene {
 
     handleNpcInteraction() {
         this.isInteracting = true;
-        const dialogText = '가나다라마바사아자차카타파하1가나다라마바사아자차카타파하2가나다라마바사아자차카타파하3가나다라마바사아자차카타파하4가나다라마바사아자차카타파하5';
+        const dialogText = '안녕하세요. 무엇을 도와드릴까요?\n\n(입장권을 전달했습니다.)\n\n네, 현재 입장 가능하세요. 갤러리로 이동시켜 드리겠습니다.\n 그러면 즐거운 관람 되세요 ^^';
         this.showDescription(dialogText, null);
     }
 

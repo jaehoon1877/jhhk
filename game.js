@@ -305,7 +305,8 @@ class ReceptionScene extends Phaser.Scene {
                 this.isWaitingForInput = false;
                 this.continueTyping = true;
             } else if (!this.isInteracting) {
-                if (this.physics.world.overlap(this.player, this.npcZone)) {
+                if (this.physics.world.overlap(this.player, this.npcZone) &&
+                    Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
                     this.handleNpcInteraction();
                 } else {
                     this.targetPosition.x = pointer.x;
@@ -751,11 +752,11 @@ class GalleryScene extends Phaser.Scene {
 
         // 그림 설정
         const paintings = [
-            { x: 130, y: 150, x_zone: 100, y_zone: 50, key: 'painting1', desc: '해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당', imageKey: 'painting1' },
-            { x: 285, y: 150, x_zone: 30, y_zone: 50, key: 'painting2', desc: 'An abstract art piece.', imageKey: 'painting2' },
-            { x: 400, y: 150, x_zone: 60, y_zone: 50, key: 'painting3', desc: 'A starry night scene.', imageKey: 'painting3' },
-            { x: 525, y: 150, x_zone: 30, y_zone: 50, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting4' },
-            { x: 680, y: 150, x_zone: 100, y_zone: 50, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5' }
+            { x: 120, y: 120, x_zone: 110, y_zone: 130, key: 'painting1', desc: '해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당', imageKey: 'painting1' },
+            { x: 280, y: 120, x_zone: 40, y_zone: 130, key: 'painting2', desc: 'An abstract art piece.', imageKey: 'painting2' },
+            { x: 400, y: 120, x_zone: 100, y_zone: 130, key: 'painting3', desc: 'A starry night scene.', imageKey: 'painting3' },
+            { x: 520, y: 120, x_zone: 40, y_zone: 130, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting4' },
+            { x: 675, y: 120, x_zone: 115, y_zone: 130, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5' }
         ];
 
         this.paintingZones = [];

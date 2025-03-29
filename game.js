@@ -19,6 +19,8 @@ class EntranceScene extends Phaser.Scene {
         this.load.image('entranceBg', 'assets/entrance.png');
         this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
         this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
+        // 입장권 이미지 로드
+        this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
     }
 
     create() {
@@ -85,7 +87,11 @@ class EntranceScene extends Phaser.Scene {
                 console.log('Touch: Continuing typing');
                 this.isWaitingForInput = false;
                 this.continueTyping = true;
-            } else if (!this.isInteracting) {
+            } else if (this.isShowingTicket && this.isWaitingForTicketInput) {
+                console.log('Touch: Closing ticket message');
+                this.isWaitingForTicketInput = false;
+                this.hideTicketAndMessage();
+            } else if (!this.isInteracting && !this.isShowingTicket) {
                 if (this.physics.world.overlap(this.player, this.npcZone) &&
                     Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
                     this.handleNpcInteraction();
@@ -104,7 +110,11 @@ class EntranceScene extends Phaser.Scene {
                 console.log('Space: Continuing typing');
                 this.isWaitingForInput = false;
                 this.continueTyping = true;
-            } else if (!this.isInteracting) {
+            } else if (this.isShowingTicket && this.isWaitingForTicketInput) {
+                console.log('Space: Closing ticket message');
+                this.isWaitingForTicketInput = false;
+                this.hideTicketAndMessage();
+            } else if (!this.isInteracting && !this.isShowingTicket) {
                 if (this.physics.world.overlap(this.player, this.npcZone)) {
                     this.handleNpcInteraction();
                 }
@@ -147,6 +157,10 @@ class EntranceScene extends Phaser.Scene {
         this.isWaitingForInput = false; // ▼ 표시 대기 상태
         this.continueTyping = false; // 텍스트 이어쓰기 상태
         this.hasTalkedToNpc = false; // NPC와 대화했는지 여부를 추적하는 플래그
+        this.isShowingTicket = false; // 입장권 메시지 표시 중인지 여부
+
+        // 전역 상태 초기화
+        this.registry.set('hasReceivedTicket',false);
     }
 
     update() {
@@ -154,7 +168,7 @@ class EntranceScene extends Phaser.Scene {
         let velocityX = 0;
         let velocityY = 0;
 
-        if (!this.isInteracting) {
+        if (!this.isInteracting && !this.isShowingTicket) {
             // 키보드 입력 처리
             let hasKeyboardInput = false;
             if (this.cursors.left.isDown) {
@@ -227,7 +241,7 @@ class EntranceScene extends Phaser.Scene {
         this.player.setVelocity(velocityX, velocityY);
     }
 
-    // 대화창 표시 메서드 (ReceptionScene에서 복사)
+    // 대화창 표시 메서드
     showDescription(text, imageKey) {
         const dialogBox = this.add.rectangle(400, 550, 600, 80, 0x000000, 0.8);
         const dialogText = this.add.text(400, 550, '', { 
@@ -250,16 +264,95 @@ class EntranceScene extends Phaser.Scene {
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
-        this.typeText(text, dialogText, this, () => {
-            // 대화가 끝난 후 NPC와 대화한 것으로 표시
-            this.hasTalkedToNpc = true;
-        });
+        // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
+        const callback = () => {
+            if (!this.hasTalkedToNpc) {
+                this.hasTalkedToNpc = true;
+                console.log('First NPC conversation finished, preparing to show ticket.');
+                // 대화창이 완전히 사라진 후 입장권 표시
+                this.time.delayedCall(500, () => {
+                    this.showTicketAndMessage();
+                });
+            }
+        };
+
+        this.typeText(text, dialogText, this, callback);
 
         this.dialogBox = dialogBox;
         this.dialogText = dialogText;
     }
 
-    // 대화창 숨김 메서드 (ReceptionScene에서 복사)
+    // 입장권 이미지와 "갤러리 입장권을 획득했습니다." 메시지 표시
+    showTicketAndMessage() {
+        // 입장권 이미지 표시
+        this.ticketImage = this.add.image(400, 250, 'ticket').setDepth(12);
+        this.ticketImage.setDisplaySize(400, 400); // 입장권 이미지 크기 조정 (필요에 따라 수정)
+        this.tweens.add({
+            targets: this.ticketImage,
+            alpha: 1,
+            duration: 500,
+            ease: 'Linear'
+        });
+        console.log('Ticket image displayed at (400, 300).');
+
+        // 입장권 획득 메시지 표시
+        const ticketMessage = '(갤러리 입장권을 획득했습니다.)';
+        const dialogBox = this.add.rectangle(400, 550, 600, 80, 0x000000, 0.8);
+        const dialogText = this.add.text(400, 550, '', { 
+            fontSize: '16px', 
+            color: '#fff', 
+            align: 'center', 
+            wordWrap: { width: 580 }
+        }).setOrigin(0.5);
+
+        dialogBox.setDepth(10);
+        dialogText.setDepth(11);
+
+        this.isShowingTicket = true;
+        this.isWaitingForTicketInput = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.ticketArrowIndicator = this.add.text(650, 550, '▼', {
+            fontSize: '16px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        this.typeTicketText(ticketMessage, dialogText, this);
+
+        this.ticketDialogBox = dialogBox;
+        this.ticketDialogText = dialogText;
+    }
+
+    // 입장권 메시지 숨김 메서드
+    hideTicketAndMessage() {
+        if (this.ticketDialogBox && this.ticketDialogText) {
+            this.ticketDialogBox.destroy();
+            this.ticketDialogText.destroy();
+        }
+        if (this.ticketArrowIndicator) {
+            if (this.ticketArrowIndicatorBlinkEvent) {
+                this.ticketArrowIndicatorBlinkEvent.remove();
+            }
+            this.ticketArrowIndicator.destroy();
+        }
+        if (this.ticketImage) {
+            this.ticketImage.destroy();
+            console.log('Ticket image removed.');
+        }
+        this.ticketDialogBox = null;
+        this.ticketDialogText = null;
+        this.ticketArrowIndicator = null;
+        this.ticketArrowIndicatorBlinkEvent = null;
+        this.ticketImage = null;
+        this.isShowingTicket = false;
+        this.isWaitingForTicketInput = false;
+
+        // 전역 상태 업데이트
+        this.registry.set('hasReceivedTicket', true);
+        console.log('hasReceivedTicket set to true in registry.');
+    }
+
+    // 대화창 숨김 메서드
     hideDescription() {
         if (this.dialogBox && this.dialogText) {
             this.dialogBox.destroy();
@@ -280,7 +373,7 @@ class EntranceScene extends Phaser.Scene {
         this.continueTyping = false;
     }
 
-    // 텍스트 타이핑 메서드 (ReceptionScene에서 복사)
+    // 텍스트 타이핑 메서드 (대화창용)
     typeText(text, targetText, scene, callback) {
         let currentIndex = 0;
         let letEnterIdx = 0;
@@ -397,7 +490,88 @@ class EntranceScene extends Phaser.Scene {
         typeNextChar();
     }
 
-    // NPC 상호작용 처리 메서드 (조건부 대화 추가)
+    // 입장권 텍스트 타이핑 메서드
+    typeTicketText(text, targetText, scene) {
+        let currentIndex = 0;
+        let letEnterIdx = 0;
+        let line_cnt = 1;
+        const typingSpeed = 100;
+
+        const typeNextChar = () => {
+            // 텍스트 출력이 완료된 경우
+            if (currentIndex >= text.length) {
+                // ▼ 표시를 띄우고 입력 대기
+                console.log('Ticket text fully displayed, waiting for user input at index:', currentIndex);
+                scene.isWaitingForTicketInput = true;
+                scene.ticketArrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.ticketArrowIndicatorBlinkEvent) {
+                    scene.ticketArrowIndicatorBlinkEvent.remove();
+                    scene.ticketArrowIndicatorBlinkEvent = null;
+                }
+                scene.ticketArrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.ticketArrowIndicator) {
+                            scene.ticketArrowIndicator.setVisible(!scene.ticketArrowIndicator.visible);
+                            console.log('Ticket arrow indicator visibility toggled to:', scene.ticketArrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                return; // 루프 종료
+            }
+
+            // 2줄 초과 시 ▼ 표시 (입장권 메시지는 한 줄이므로 이 조건은 필요 없을 수 있음)
+            if (line_cnt >= 3) {
+                console.log('Waiting for user input at index:', currentIndex);
+                scene.isWaitingForTicketInput = true;
+                scene.ticketArrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.ticketArrowIndicatorBlinkEvent) {
+                    scene.ticketArrowIndicatorBlinkEvent.remove();
+                    scene.ticketArrowIndicatorBlinkEvent = null;
+                }
+                scene.ticketArrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.ticketArrowIndicator) {
+                            scene.ticketArrowIndicator.setVisible(!scene.ticketArrowIndicator.visible);
+                            console.log('Ticket arrow indicator visibility toggled to:', scene.ticketArrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                scene.time.delayedCall(typingSpeed, typeNextChar);
+                return;
+            }
+
+            // 다음 글자 출력
+            targetText.setText(targetText.text + text[currentIndex]);
+            currentIndex++;
+            letEnterIdx++;
+
+            // 줄바꿈 처리
+            if (text[currentIndex] === '\n') {
+                letEnterIdx = 0;
+                line_cnt++;
+            } else if (letEnterIdx == 20) {
+                letEnterIdx = 0;
+                line_cnt++;
+                if (line_cnt < 3) {
+                    targetText.setText(targetText.text + '\n');
+                }
+            }
+
+            // 다음 글자 출력
+            scene.time.delayedCall(typingSpeed, typeNextChar);
+        };
+
+        // 첫 글자부터 시작
+        typeNextChar();
+    }
+
+    // NPC 상호작용 처리 메서드
     handleNpcInteraction() {
         this.isInteracting = true;
         let dialogText;
@@ -418,6 +592,9 @@ class EntranceScene extends Phaser.Scene {
         }
         if (this.interactionText) {
             this.interactionText.destroy();
+        }
+        if (this.ticketImage) {
+            this.ticketImage.destroy();
         }
     }
 }
@@ -644,7 +821,7 @@ class ReceptionScene extends Phaser.Scene {
         this.player.setVelocity(velocityX, velocityY);
     }
 
-    showDescription(text, imageKey) {
+    showDescription(text, imageKey, callback) {
         const dialogBox = this.add.rectangle(400, 550, 600, 80, 0x000000, 0.8);
         const dialogText = this.add.text(400, 550, '', { 
             fontSize: '16px', 
@@ -660,15 +837,12 @@ class ReceptionScene extends Phaser.Scene {
         this.isWaitingForInput = false;
         this.continueTyping = false;
 
-        // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(650, 550, '▼', {
             fontSize: '16px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
-        this.typeText(text, dialogText, this, () => {
-            this.scene.start('GalleryScene', { returnToEntrance: false });
-        });
+        this.typeText(text, dialogText, this, callback);
 
         this.dialogBox = dialogBox;
         this.dialogText = dialogText;
@@ -811,8 +985,24 @@ class ReceptionScene extends Phaser.Scene {
 
     handleNpcInteraction() {
         this.isInteracting = true;
-        const dialogText = '안녕하세요. 무엇을 도와드릴까요?\n\n(입장권을 전달했습니다.)\n\n네, 현재 입장 가능하세요. 갤러리로 이동시켜 드리겠습니다.\n 그러면 즐거운 관람 되세요 ^^';
-        this.showDescription(dialogText, null);
+        this.showDescription('안녕하세요, JH갤러리입니다. 무엇을 도와드릴까요?', null, () => {
+            // 입장권 소지 여부 확인
+            const hasReceivedTicket = this.registry.get('hasReceivedTicket');
+            console.log('Checking hasReceivedTicket:', hasReceivedTicket);
+            this.hideDescription();
+            if (hasReceivedTicket) {
+                // 입장권이 있으면 기존 대화 이어가기
+                const dialogText = '(입장권을 전달했습니다.)\n\n네, 현재 입장 가능하세요. 갤러리로 이동시켜 드리겠습니다.\n 그러면 즐거운 관람 되세요 ^^';
+                this.showDescription(dialogText, null, () => {
+                    this.scene.start('GalleryScene', { returnToEntrance: false });
+                });
+            } else {
+                // 입장권이 없으면 대화 종료
+                this.showDescription('(입장권이 없습니다.)\n\n고객님, 실례지만 입장권이 있으셔야 관람을 도와드릴 수 있습니다.', null, () => {
+                    this.hideDescription();
+                });
+            }
+        });
     }
 
     shutdown() {

@@ -13,6 +13,7 @@ class EntranceScene extends Phaser.Scene {
             this.playerStartX = 400;
             this.playerStartY = 550;
         }
+
     }
 
     preload() {
@@ -156,11 +157,7 @@ class EntranceScene extends Phaser.Scene {
         this.isInteracting = false;
         this.isWaitingForInput = false; // ▼ 표시 대기 상태
         this.continueTyping = false; // 텍스트 이어쓰기 상태
-        this.hasTalkedToNpc = false; // NPC와 대화했는지 여부를 추적하는 플래그
         this.isShowingTicket = false; // 입장권 메시지 표시 중인지 여부
-
-        // 전역 상태 초기화
-        this.registry.set('hasReceivedTicket',false);
     }
 
     update() {
@@ -266,8 +263,7 @@ class EntranceScene extends Phaser.Scene {
 
         // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
         const callback = () => {
-            if (!this.hasTalkedToNpc) {
-                this.hasTalkedToNpc = true;
+            if (this.registry.get('hasReceivedTicket')==false) {
                 console.log('First NPC conversation finished, preparing to show ticket.');
                 // 대화창이 완전히 사라진 후 입장권 표시
                 this.time.delayedCall(500, () => {
@@ -575,7 +571,7 @@ class EntranceScene extends Phaser.Scene {
     handleNpcInteraction() {
         this.isInteracting = true;
         let dialogText;
-        if (!this.hasTalkedToNpc) {
+        if (this.registry.get('hasReceivedTicket')==false) {
             // 첫 대화
             dialogText = '안녕하세요 하경님, 만나서 반가워요!\n재훈님이 이 입장권을 전달해달라고 부탁하셨어요. 이거를 가지고 갤러리 안으로 들어가시면 안내원이 입장을 도와주실거예요 ^^';
         } else {
@@ -692,7 +688,7 @@ class ReceptionScene extends Phaser.Scene {
         });
 
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
-        this.entryZone = this.add.zone(410, 600, 190, 10);
+        this.entryZone = this.add.zone(410, 600, 190, 20);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
             this.scene.start('EntranceScene', { returnToEntrance: true });
@@ -1137,7 +1133,7 @@ class GalleryScene extends Phaser.Scene {
         });
 
         // 출구 Zone
-        this.exitZone = this.add.zone(410, 600, 130, 5);
+        this.exitZone = this.add.zone(410, 600, 130, 20);
         this.physics.add.existing(this.exitZone);
         this.physics.add.overlap(this.player, this.exitZone, () => {
             this.player.setVelocity(0);
@@ -1496,7 +1492,12 @@ const config = {
         width: 800,
         height: 600
     },
-    scene: [EntranceScene, ReceptionScene, GalleryScene]
+    scene: [EntranceScene, ReceptionScene, GalleryScene],
+    callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
+        preBoot: (game) => {
+            game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화
+        }
+    }
 };
 
 // 게임 초기화

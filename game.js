@@ -7,11 +7,11 @@ class EntranceScene extends Phaser.Scene {
 
     init(data) {
         if (data && data.returnToEntrance) {
-            this.playerStartX = 400;
-            this.playerStartY = 300;
+            this.playerStartX = 512;
+            this.playerStartY = 1100;
         } else {
-            this.playerStartX = 400;
-            this.playerStartY = 550;
+            this.playerStartX = 512;
+            this.playerStartY = 1150;
         }
 
     }
@@ -27,6 +27,7 @@ class EntranceScene extends Phaser.Scene {
     create() {
         this.add.image(512, 640, 'entranceBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
+        this.player.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
 
@@ -71,12 +72,13 @@ class EntranceScene extends Phaser.Scene {
         this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
 
         // NPC 생성 (위치: x: 400, y: 430)
-        this.npc = this.physics.add.sprite(400, 430, 'player');
+        this.npc = this.physics.add.sprite(512, 1010, 'player');
+        this.npc.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.npc.setImmovable(true);
         this.npc.setFrame(59); // NPC 스프라이트 프레임
 
         // NPC 상호작용 Zone
-        this.npcZone = this.add.zone(400, 430, 70, 70);
+        this.npcZone = this.add.zone(512, 1010, 70, 70);
         this.physics.add.existing(this.npcZone);
         this.physics.add.overlap(this.player, this.npcZone, () => {
             // 상호작용 프롬프트 표시 (필요 시 추가 가능)
@@ -124,17 +126,23 @@ class EntranceScene extends Phaser.Scene {
 
         // 벽 설정
         this.walls = [
-            this.physics.add.staticBody(385, 415, 30, 30), // NPC
-            this.physics.add.staticBody(310, 250, 40, 40),
-            this.physics.add.staticBody(460, 250, 40, 40),
-            this.physics.add.staticBody(310, 290, 10, 90),
-            this.physics.add.staticBody(490, 290, 10, 90),
-            this.physics.add.staticBody(0, 380, 310, 10),
-            this.physics.add.staticBody(490, 380, 310, 10),
-            this.physics.add.staticBody(310, 490, 10, 110),
-            this.physics.add.staticBody(490, 490, 10, 110),
-            this.physics.add.staticBody(0, 490, 310, 10),
-            this.physics.add.staticBody(490, 490, 310, 10),
+            this.physics.add.staticBody(490, 1000, 45, 45), // NPC
+
+            this.physics.add.staticBody(360, 420, 70, 70),
+            this.physics.add.staticBody(590, 420, 70, 70),
+
+            this.physics.add.staticBody(335, 480, 20, 200),
+            this.physics.add.staticBody(665, 480, 20, 200),
+
+            this.physics.add.staticBody(0, 650, 330, 30),
+            this.physics.add.staticBody(690, 650, 330, 30),
+
+            this.physics.add.staticBody(0, 650, 150, 385),
+            this.physics.add.staticBody(870, 650, 150, 385),
+
+            this.physics.add.staticBody(0, 1020, 320, 385),
+            this.physics.add.staticBody(700,1020, 320, 385),
+
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
@@ -147,7 +155,7 @@ class EntranceScene extends Phaser.Scene {
         });
 
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
-        this.entryZone = this.add.zone(405, 220, 105, 50);
+        this.entryZone = this.add.zone(510, 400, 150, 50);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
             this.scene.start('ReceptionScene', { returnToEntrance: true });
@@ -161,7 +169,7 @@ class EntranceScene extends Phaser.Scene {
     }
 
     update() {
-        const speed = 200;
+        const speed = 400;
         let velocityX = 0;
         let velocityY = 0;
 
@@ -632,6 +640,7 @@ class ReceptionScene extends Phaser.Scene {
 
         // NPC 생성
         this.npc = this.physics.add.sprite(400, 165, 'player');
+        this.npc.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.npc.setImmovable(true);
         this.npc.setFrame(52);
 
@@ -740,7 +749,7 @@ class ReceptionScene extends Phaser.Scene {
     }
 
     update() {
-        const speed = 200;
+        const speed = 300;
         let velocityX = 0;
         let velocityY = 0;
 
@@ -1188,7 +1197,7 @@ class GalleryScene extends Phaser.Scene {
     }
 
     update() {
-        const speed = 200;
+        const speed = 300;
         let velocityX = 0;
         let velocityY = 0;
 

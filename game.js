@@ -25,7 +25,7 @@ class EntranceScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.image(400, 300, 'entranceBg');
+        this.add.image(512, 640, 'entranceBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
@@ -1476,21 +1476,21 @@ class GalleryScene extends Phaser.Scene {
 // 게임 설정
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 1024,
+    height: 1280,
     physics: {
         default: 'arcade',
         arcade: {
              gravity: { y: 0 } ,
-             debug:true
+             debug:true // debug option
             }
     },
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
         parent: 'game-container', // 캔버스를 #game-container 안에 배치
-        width: 800,
-        height: 600
+        width: 1024,
+        height: 1280
     },
     scene: [EntranceScene, ReceptionScene, GalleryScene],
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백

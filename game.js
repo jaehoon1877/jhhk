@@ -1488,6 +1488,7 @@ const config = {
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
+        fullscreenTarget: 'game-container',
         parent: 'game-container', // 캔버스를 #game-container 안에 배치
         width: 1024,
         height: 1280

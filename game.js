@@ -8,10 +8,10 @@ class EntranceScene extends Phaser.Scene {
     init(data) {
         if (data && data.returnToEntrance) {
             this.playerStartX = 512;
-            this.playerStartY = 1100;
+            this.playerStartY = 480;
         } else {
             this.playerStartX = 512;
-            this.playerStartY = 1150;
+            this.playerStartY = 1200;
         }
 
     }
@@ -32,12 +32,12 @@ class EntranceScene extends Phaser.Scene {
         this.player.setFrame(4);
 
         // BGM 재생
-        if (this.sound.get('entranceBgm')) {
-            // this.sound.removeByKey('entranceBgm');
-        } else {
-            this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
-            this.entranceBgm.play();
-        }
+        // if (this.sound.get('entranceBgm')) {
+        //     // this.sound.removeByKey('entranceBgm');
+        // } else {
+        //     this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
+        //     this.entranceBgm.play();
+        // }
 
         // 애니메이션 설정
         this.anims.create({
@@ -78,7 +78,7 @@ class EntranceScene extends Phaser.Scene {
         this.npc.setFrame(59); // NPC 스프라이트 프레임
 
         // NPC 상호작용 Zone
-        this.npcZone = this.add.zone(512, 1010, 70, 70);
+        this.npcZone = this.add.zone(512, 1010, 80, 80);
         this.physics.add.existing(this.npcZone);
         this.physics.add.overlap(this.player, this.npcZone, () => {
             // 상호작용 프롬프트 표시 (필요 시 추가 가능)
@@ -248,12 +248,12 @@ class EntranceScene extends Phaser.Scene {
 
     // 대화창 표시 메서드
     showDescription(text, imageKey) {
-        const dialogBox = this.add.rectangle(400, 550, 600, 80, 0x000000, 0.8);
-        const dialogText = this.add.text(400, 550, '', { 
-            fontSize: '16px', 
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 580 }
+            wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -264,8 +264,8 @@ class EntranceScene extends Phaser.Scene {
         this.continueTyping = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.arrowIndicator = this.add.text(650, 550, '▼', {
-            fontSize: '16px',
+        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+            fontSize: '25px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -289,8 +289,8 @@ class EntranceScene extends Phaser.Scene {
     // 입장권 이미지와 "갤러리 입장권을 획득했습니다." 메시지 표시
     showTicketAndMessage() {
         // 입장권 이미지 표시
-        this.ticketImage = this.add.image(400, 250, 'ticket').setDepth(12);
-        this.ticketImage.setDisplaySize(400, 400); // 입장권 이미지 크기 조정 (필요에 따라 수정)
+        this.ticketImage = this.add.image(512, 524, 'ticket').setDepth(12);
+        this.ticketImage.setDisplaySize(600, 600); // 입장권 이미지 크기 조정 (필요에 따라 수정)
         this.tweens.add({
             targets: this.ticketImage,
             alpha: 1,
@@ -301,12 +301,12 @@ class EntranceScene extends Phaser.Scene {
 
         // 입장권 획득 메시지 표시
         const ticketMessage = '(갤러리 입장권을 획득했습니다.)';
-        const dialogBox = this.add.rectangle(400, 550, 600, 80, 0x000000, 0.8);
-        const dialogText = this.add.text(400, 550, '', { 
-            fontSize: '16px', 
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 580 }
+            wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -316,10 +316,12 @@ class EntranceScene extends Phaser.Scene {
         this.isWaitingForTicketInput = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.ticketArrowIndicator = this.add.text(650, 550, '▼', {
-            fontSize: '16px',
+        this.ticketArrowIndicator = this.add.text(800, 1240, '▼', {
+            fontSize: '25px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        
 
         this.typeTicketText(ticketMessage, dialogText, this);
 
@@ -382,7 +384,7 @@ class EntranceScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
-        const typingSpeed = 100;
+        const typingSpeed = 80;
 
         const typeNextChar = () => {
             // 텍스트 출력이 완료된 경우
@@ -478,7 +480,7 @@ class EntranceScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 20) {
+            } else if (letEnterIdx == 30) {
                 letEnterIdx = 0;
                 line_cnt++;
                 if (line_cnt < 3) {
@@ -499,7 +501,7 @@ class EntranceScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
-        const typingSpeed = 100;
+        const typingSpeed = 80;
 
         const typeNextChar = () => {
             // 텍스트 출력이 완료된 경우
@@ -609,13 +611,14 @@ class ReceptionScene extends Phaser.Scene {
     }
 
     init(data) {
-        if (data && data.returnToEntrance) {
-            this.playerStartX = 400;
-            this.playerStartY = 550;
+        if (data && data.returnToReception) {
+            this.playerStartX = 512;
+            this.playerStartY = 1100;
         } else {
-            this.playerStartX = 400;
-            this.playerStartY = 550;
+            this.playerStartX = 512;
+            this.playerStartY = 1200;
         }
+
     }
 
     preload() {
@@ -625,8 +628,9 @@ class ReceptionScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.image(400, 300, 'receptionBg');
+        this.add.image(512, 640, 'receptionBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
+        this.player.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
 
@@ -639,7 +643,7 @@ class ReceptionScene extends Phaser.Scene {
         // }
 
         // NPC 생성
-        this.npc = this.physics.add.sprite(400, 165, 'player');
+        this.npc = this.physics.add.sprite(512, 250, 'player');
         this.npc.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.npc.setImmovable(true);
         this.npc.setFrame(52);
@@ -678,13 +682,12 @@ class ReceptionScene extends Phaser.Scene {
 
         // 이동 불가능 영역 (벽면) 설정
         this.walls = [
-            this.physics.add.staticBody(260, 230, 50, 50),
-            this.physics.add.staticBody(500, 230, 50, 50),
-            this.physics.add.staticBody(0, 150, 800, 80),
-            this.physics.add.staticBody(0, 525, 310, 75),
-            this.physics.add.staticBody(500, 525, 300, 75),
-            this.physics.add.staticBody(0, 0, 120, 600),
-            this.physics.add.staticBody(685, 0, 120, 600),
+            this.physics.add.staticBody(0, 1210, 360, 70),
+            this.physics.add.staticBody(664, 1210, 360, 70),
+            this.physics.add.staticBody(0, 0, 150, 1280),
+            this.physics.add.staticBody(874, 0, 150, 1280),
+            this.physics.add.staticBody(0, 0, 1024, 400),
+
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
@@ -697,7 +700,7 @@ class ReceptionScene extends Phaser.Scene {
         });
 
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
-        this.entryZone = this.add.zone(410, 600, 190, 20);
+        this.entryZone = this.add.zone(512, 1260, 300, 40);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
             this.scene.start('EntranceScene', { returnToEntrance: true });
@@ -723,7 +726,7 @@ class ReceptionScene extends Phaser.Scene {
         });
 
         // NPC 상호작용 Zone
-        this.npcZone = this.add.zone(400, 165, 70, 180);
+        this.npcZone = this.add.zone(512, 300, 100, 300);
         this.physics.add.existing(this.npcZone);
         this.physics.add.overlap(this.player, this.npcZone, () => {
             // this.showInteractionPrompt();
@@ -749,7 +752,7 @@ class ReceptionScene extends Phaser.Scene {
     }
 
     update() {
-        const speed = 300;
+        const speed = 400;
         let velocityX = 0;
         let velocityY = 0;
 
@@ -827,12 +830,12 @@ class ReceptionScene extends Phaser.Scene {
     }
 
     showDescription(text, imageKey, callback) {
-        const dialogBox = this.add.rectangle(400, 550, 600, 80, 0x000000, 0.8);
-        const dialogText = this.add.text(400, 550, '', { 
-            fontSize: '16px', 
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 580 }
+            wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -842,8 +845,8 @@ class ReceptionScene extends Phaser.Scene {
         this.isWaitingForInput = false;
         this.continueTyping = false;
 
-        this.arrowIndicator = this.add.text(650, 550, '▼', {
-            fontSize: '16px',
+        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+            fontSize: '25px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -877,7 +880,7 @@ class ReceptionScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
-        const typingSpeed = 100;
+        const typingSpeed = 80;
 
         const typeNextChar = () => {
             // 텍스트 출력이 완료된 경우
@@ -972,7 +975,7 @@ class ReceptionScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 20) {
+            } else if (letEnterIdx == 30) {
                 letEnterIdx = 0;
                 line_cnt++;
                 if (line_cnt < 3) {
@@ -999,7 +1002,7 @@ class ReceptionScene extends Phaser.Scene {
                 // 입장권이 있으면 기존 대화 이어가기
                 const dialogText = '(입장권을 전달했습니다.)\n\n네, 현재 입장 가능하세요. 갤러리로 이동시켜 드리겠습니다.\n 그러면 즐거운 관람 되세요 ^^';
                 this.showDescription(dialogText, null, () => {
-                    this.scene.start('GalleryScene', { returnToEntrance: false });
+                    this.scene.start('GalleryScene', { returnToReception: true });
                 });
             } else {
                 // 입장권이 없으면 대화 종료
@@ -1027,13 +1030,14 @@ class GalleryScene extends Phaser.Scene {
     }
     
     init(data) {
-        if (data && data.returnToEntrance) {
-            this.playerStartX = 400;
-            this.playerStartY = 0;
+        if (data && data.returnToGallery) {
+            this.playerStartX = 512;
+            this.playerStartY = 480;
         } else {
-            this.playerStartX = 400;
-            this.playerStartY = 550;
+            this.playerStartX = 512;
+            this.playerStartY = 1200;
         }
+    
     }
 
     preload() {
@@ -1048,8 +1052,9 @@ class GalleryScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.image(400, 300, 'galleryBg');
+        this.add.image(512, 640, 'galleryBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
+        this.player.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
 
@@ -1142,7 +1147,7 @@ class GalleryScene extends Phaser.Scene {
         });
 
         // 출구 Zone
-        this.exitZone = this.add.zone(410, 600, 130, 20);
+        this.exitZone = this.add.zone(512, 1260, 300, 40);
         this.physics.add.existing(this.exitZone);
         this.physics.add.overlap(this.player, this.exitZone, () => {
             this.player.setVelocity(0);
@@ -1197,7 +1202,7 @@ class GalleryScene extends Phaser.Scene {
     }
 
     update() {
-        const speed = 300;
+        const speed = 400;
         let velocityX = 0;
         let velocityY = 0;
 
@@ -1299,12 +1304,12 @@ class GalleryScene extends Phaser.Scene {
         frame.setDepth(13);
         frame.setStrokeStyle(10, 0x8B4513, 1);
 
-        const dialogBox = this.add.rectangle(400, 550, 600, 100, 0x000000, 0.8);
-        const dialogText = this.add.text(400, 550, '', { 
-            fontSize: '16px', 
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 560 }
+            wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -1315,8 +1320,8 @@ class GalleryScene extends Phaser.Scene {
         this.continueTyping = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.arrowIndicator = this.add.text(650, 550, '▼', {
-            fontSize: '16px',
+        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+            fontSize: '25px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -1362,7 +1367,7 @@ class GalleryScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
-        const typingSpeed = 100;
+        const typingSpeed = 80;
 
         const typeNextChar = () => {
             // 텍스트 출력이 완료된 경우
@@ -1458,7 +1463,7 @@ class GalleryScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 20) {
+            } else if (letEnterIdx == 30) {
                 letEnterIdx = 0;
                 line_cnt++;
                 if (line_cnt < 3) {

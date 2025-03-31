@@ -8,7 +8,7 @@ class EntranceScene extends Phaser.Scene {
     init(data) {
         if (data && data.returnToEntrance) {
             this.playerStartX = 512;
-            this.playerStartY = 480;
+            this.playerStartY = 500;
         } else {
             this.playerStartX = 512;
             this.playerStartY = 1200;
@@ -27,17 +27,17 @@ class EntranceScene extends Phaser.Scene {
     create() {
         this.add.image(512, 640, 'entranceBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
-        this.player.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
 
         // BGM 재생
-        // if (this.sound.get('entranceBgm')) {
-        //     // this.sound.removeByKey('entranceBgm');
-        // } else {
-        //     this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
-        //     this.entranceBgm.play();
-        // }
+        if (this.sound.get('entranceBgm')) {
+            // this.sound.removeByKey('entranceBgm');
+        } else {
+            this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
+            this.entranceBgm.play();
+        }
 
         // 애니메이션 설정
         this.anims.create({
@@ -73,7 +73,7 @@ class EntranceScene extends Phaser.Scene {
 
         // NPC 생성 (위치: x: 400, y: 430)
         this.npc = this.physics.add.sprite(512, 1010, 'player');
-        this.npc.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.npc.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
         this.npc.setImmovable(true);
         this.npc.setFrame(59); // NPC 스프라이트 프레임
 
@@ -480,7 +480,7 @@ class EntranceScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 30) {
+            } else if (letEnterIdx == 35) {
                 letEnterIdx = 0;
                 line_cnt++;
                 if (line_cnt < 3) {
@@ -561,7 +561,7 @@ class EntranceScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 20) {
+            } else if (letEnterIdx == 35) {
                 letEnterIdx = 0;
                 line_cnt++;
                 if (line_cnt < 3) {
@@ -583,10 +583,10 @@ class EntranceScene extends Phaser.Scene {
         let dialogText;
         if (this.registry.get('hasReceivedTicket')==false) {
             // 첫 대화
-            dialogText = '안녕하세요 하경님, 만나서 반가워요!\n재훈님이 이 입장권을 전달해달라고 부탁하셨어요. 이거를 가지고 갤러리 안으로 들어가시면 안내원이 입장을 도와주실거예요 ^^';
+            dialogText = '안녕하세요 하경님, 만나서 반가워요!\n저희 갤러리의 JH님께서 이 티켓의 전달을 부탁하셨어요.\n 이 티켓을 가지고 갤러리 안으로 들어가시면\n저희 직원이 하경님의 관람을 도와주실거예요 ^^';
         } else {
             // 두 번째 대화 (이후 반복)
-            dialogText = '갤러리 안으로 들어가시면 안내원이 입장을 도와주실거예요 ^^';
+            dialogText = '이 티켓을 가지고 갤러리 안으로 들어가시면\n저희 직원이 하경님의 관람을 도와주실거예요 ^^';
         }
         this.showDescription(dialogText, null);
     }
@@ -613,10 +613,10 @@ class ReceptionScene extends Phaser.Scene {
     init(data) {
         if (data && data.returnToReception) {
             this.playerStartX = 512;
-            this.playerStartY = 1100;
+            this.playerStartY = 1150;
         } else {
             this.playerStartX = 512;
-            this.playerStartY = 1200;
+            this.playerStartY = 1150;
         }
 
     }
@@ -630,7 +630,7 @@ class ReceptionScene extends Phaser.Scene {
     create() {
         this.add.image(512, 640, 'receptionBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
-        this.player.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
 
@@ -644,7 +644,7 @@ class ReceptionScene extends Phaser.Scene {
 
         // NPC 생성
         this.npc = this.physics.add.sprite(512, 250, 'player');
-        this.npc.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.npc.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
         this.npc.setImmovable(true);
         this.npc.setFrame(52);
 
@@ -975,7 +975,7 @@ class ReceptionScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 30) {
+            } else if (letEnterIdx == 35) {
                 letEnterIdx = 0;
                 line_cnt++;
                 if (line_cnt < 3) {
@@ -1000,13 +1000,13 @@ class ReceptionScene extends Phaser.Scene {
             this.hideDescription();
             if (hasReceivedTicket) {
                 // 입장권이 있으면 기존 대화 이어가기
-                const dialogText = '(입장권을 전달했습니다.)\n\n네, 현재 입장 가능하세요. 갤러리로 이동시켜 드리겠습니다.\n 그러면 즐거운 관람 되세요 ^^';
+                const dialogText = '(입장권을 전달했습니다.)\n\n티켓을 가지고 계시네요!\n현재 입장 가능하세요. 갤러리로 이동시켜 드리겠습니다.\n즐거운 관람 되세요 ^^';
                 this.showDescription(dialogText, null, () => {
                     this.scene.start('GalleryScene', { returnToReception: true });
                 });
             } else {
                 // 입장권이 없으면 대화 종료
-                this.showDescription('(입장권이 없습니다.)\n\n고객님, 실례지만 입장권이 있으셔야 관람을 도와드릴 수 있습니다.', null, () => {
+                this.showDescription('(입장권이 없습니다.)\n\n실례지만, 입장권이 있으셔야 관람을 도와드릴 수 있습니다.', null, () => {
                     this.hideDescription();
                 });
             }
@@ -1032,10 +1032,10 @@ class GalleryScene extends Phaser.Scene {
     init(data) {
         if (data && data.returnToGallery) {
             this.playerStartX = 512;
-            this.playerStartY = 480;
+            this.playerStartY = 1100;
         } else {
             this.playerStartX = 512;
-            this.playerStartY = 1200;
+            this.playerStartY = 1100;
         }
     
     }
@@ -1054,7 +1054,7 @@ class GalleryScene extends Phaser.Scene {
     create() {
         this.add.image(512, 640, 'galleryBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
-        this.player.setScale(1.5); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
 
@@ -1128,13 +1128,33 @@ class GalleryScene extends Phaser.Scene {
 
         // 이동 불가능 영역 (벽면) 설정
         this.walls = [
-            this.physics.add.staticBody(0, 0, 800, 160),
-            this.physics.add.staticBody(0, 0, 20, 600),
-            this.physics.add.staticBody(780, 0, 20, 600),
-            this.physics.add.staticBody(0, 590, 330, 10),
-            this.physics.add.staticBody(480, 590, 330, 10),
-            this.physics.add.staticBody(0, 270, 330, 120),
-            this.physics.add.staticBody(480, 270, 320, 120)
+
+            this.physics.add.staticBody(0, 1250, 360, 50),
+            this.physics.add.staticBody(660, 1250, 350, 50),
+
+            this.physics.add.staticBody(0, 965, 280, 50),
+            this.physics.add.staticBody(735, 965, 300, 50),   
+
+            this.physics.add.staticBody(280, 800, 50, 215),
+            this.physics.add.staticBody(685, 800, 50, 215),
+
+            this.physics.add.staticBody(0, 800, 280, 50),
+            this.physics.add.staticBody(735, 800, 290, 50),           
+
+            this.physics.add.staticBody(295, 435, 50, 205),
+            this.physics.add.staticBody(675, 435, 50, 205),
+
+            this.physics.add.staticBody(0, 600, 295, 40),
+            this.physics.add.staticBody(725, 600, 300, 40), 
+
+            this.physics.add.staticBody(0, 435, 295, 50),
+            this.physics.add.staticBody(725, 435, 300, 50), 
+
+            this.physics.add.staticBody(0, 240, 1025, 50),
+
+            this.physics.add.staticBody(0, 0, 20, 1280),
+            this.physics.add.staticBody(1004, 0, 20, 1280)
+
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
@@ -1147,7 +1167,7 @@ class GalleryScene extends Phaser.Scene {
         });
 
         // 출구 Zone
-        this.exitZone = this.add.zone(512, 1260, 300, 40);
+        this.exitZone = this.add.zone(512, 1280, 300, 40);
         this.physics.add.existing(this.exitZone);
         this.physics.add.overlap(this.player, this.exitZone, () => {
             this.player.setVelocity(0);
@@ -1175,11 +1195,13 @@ class GalleryScene extends Phaser.Scene {
 
         // 그림 설정
         const paintings = [
-            { x: 120, y: 120, x_zone: 110, y_zone: 130, key: 'painting1', desc: '해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당', imageKey: 'painting1' },
-            { x: 280, y: 120, x_zone: 40, y_zone: 130, key: 'painting2', desc: 'An abstract art piece.', imageKey: 'painting2' },
-            { x: 400, y: 120, x_zone: 100, y_zone: 130, key: 'painting3', desc: 'A starry night scene.', imageKey: 'painting3' },
-            { x: 520, y: 120, x_zone: 40, y_zone: 130, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting4' },
-            { x: 675, y: 120, x_zone: 115, y_zone: 130, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5' }
+            { x: 155, y: 235, x_zone: 210, y_zone: 150, key: 'painting1', desc: '해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당', imageKey: 'painting1' },
+            { x: 512, y: 235, x_zone: 260, y_zone: 150, key: 'painting2', desc: 'An abstract art piece.', imageKey: 'painting2' },
+            { x: 865, y: 235, x_zone: 210, y_zone: 150, key: 'painting3', desc: 'A starry night scene.', imageKey: 'painting3' },
+            { x: 150, y: 605, x_zone: 230, y_zone: 140, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting4' },
+            { x: 865, y: 605, x_zone: 230, y_zone: 140, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5'} ,
+            { x: 140, y: 975, x_zone: 240, y_zone: 145, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting5'},
+            { x: 875, y: 975, x_zone: 240, y_zone: 145, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5'}
         ];
 
         this.paintingZones = [];
@@ -1295,12 +1317,12 @@ class GalleryScene extends Phaser.Scene {
 
     showDescription(text, imageKey) {
         const paintingImage = this.paintingImages[this.paintings.findIndex(p => p.imageKey === imageKey)];
-        paintingImage.setPosition(400, 250);
+        paintingImage.setPosition(512, 624);
         paintingImage.setVisible(true);
         paintingImage.setDepth(12);
-        paintingImage.setDisplaySize(400, 400);
+        paintingImage.setDisplaySize(600, 600);
 
-        const frame = this.add.rectangle(400, 250, 400, 400, 0x000000, 0);
+        const frame = this.add.rectangle(512, 624, 600, 600, 0x000000, 0);
         frame.setDepth(13);
         frame.setStrokeStyle(10, 0x8B4513, 1);
 
@@ -1463,7 +1485,7 @@ class GalleryScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 30) {
+            } else if (letEnterIdx == 35) {
                 letEnterIdx = 0;
                 line_cnt++;
                 if (line_cnt < 3) {
@@ -1496,7 +1518,7 @@ const config = {
         default: 'arcade',
         arcade: {
              gravity: { y: 0 } ,
-             debug:true // debug option
+             debug:false // debug option
             }
     },
     scale: {
@@ -1507,7 +1529,7 @@ const config = {
         width: 1024,
         height: 1280
     },
-    scene: [EntranceScene, ReceptionScene, GalleryScene],
+    scene: [EntranceScene, ReceptionScene,GalleryScene],
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
         preBoot: (game) => {
             game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화

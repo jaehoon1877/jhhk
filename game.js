@@ -146,11 +146,14 @@ class EntranceScene extends Phaser.Scene {
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
-                // 벽에 충돌 시 목표 경로를 현재 위치로 변경
-                this.targetPosition = { x: this.player.x, y: this.player.y };
-                this.isTouchInputActive = false; // 터치 입력 비활성화
-                this.isMovingX = false;
-                this.player.anims.stop(); // 애니메이션 정지
+                if (this.isTouchInputActive) {
+                    // 🔁 이동 방향 전환
+                    this.isMovingX = !this.isMovingX;
+        
+                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
+                    this.player.setVelocity(0);
+                    this.player.anims.stop();
+                }
             });
         });
 
@@ -202,37 +205,47 @@ class EntranceScene extends Phaser.Scene {
             }
 
             // 터치 입력 처리 (터치 입력이 활성화된 경우에만)
-            if (!hasKeyboardInput && velocityX === 0 && velocityY === 0 && this.isTouchInputActive) {
-                const dx = this.targetPosition.x - this.player.x;
-                const dy = this.targetPosition.y - this.player.y;
+            const tolerance = 10;
+            const dx = this.targetPosition.x - this.player.x;
+            const dy = this.targetPosition.y - this.player.y;
 
+            let canMoveX = Math.abs(dx) > tolerance;
+            let canMoveY = Math.abs(dy) > tolerance;
+
+            if (this.isTouchInputActive) {
+                // 현재 X 축 이동 중
                 if (this.isMovingX) {
-                    if (Math.abs(dx) > 5) {
-                        if (dx > 0) {
-                            velocityX = speed;
-                            this.player.anims.play('walkRight', true);
-                        } else {
-                            velocityX = -speed;
-                            this.player.anims.play('walkLeft', true);
-                        }
+                    if (canMoveX) {
+                        velocityX = dx > 0 ? speed : -speed;
+                        this.player.anims.play(dx > 0 ? 'walkRight' : 'walkLeft', true);
                     } else {
-                        this.isMovingX = false;
+                        this.player.x = this.targetPosition.x;
+                        this.isMovingX = false; // X 완료 → Y로 넘어감
+                        this.player.setVelocityX(0);
                     }
                 } else {
-                    if (Math.abs(dy) > 5) {
-                        if (dy > 0) {
-                            velocityY = speed;
-                            this.player.anims.play('walkDown', true);
-                        } else {
-                            velocityY = -speed;
-                            this.player.anims.play('walkUp', true);
-                        }
+                    if (canMoveY) {
+                        velocityY = dy > 0 ? speed : -speed;
+                        this.player.anims.play(dy > 0 ? 'walkDown' : 'walkUp', true);
                     } else {
-                        this.player.setVelocity(0);
-                        this.player.anims.stop();
-                        this.isTouchInputActive = false; // 목표에 도달하면 터치 입력 비활성화
+                        this.player.y = this.targetPosition.y;
+
+                        if (canMoveX) {
+                            this.isMovingX = true; // Y 막혔지만 X 남음 → X 시도
+                            this.player.setVelocityY(0);
+                        } else {
+                            // 🎯 둘 다 못 가면 멈추기
+                            this.isTouchInputActive = false;
+                            this.player.setVelocity(0);
+                            this.player.anims.stop();
+
+                            // 마지막으로 좌표 정리
+                            this.player.x = this.targetPosition.x;
+                            this.player.y = this.targetPosition.y;
+                        }
                     }
                 }
+                
             } else if (velocityX === 0 && velocityY === 0) {
                 // 키보드 입력 후 멈췄을 때 애니메이션 정지
                 this.player.setVelocity(0);
@@ -253,7 +266,7 @@ class EntranceScene extends Phaser.Scene {
             fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 700 }
+            // wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -306,7 +319,7 @@ class EntranceScene extends Phaser.Scene {
             fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 700 }
+            // wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -480,13 +493,14 @@ class EntranceScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 35) {
-                letEnterIdx = 0;
-                line_cnt++;
-                if (line_cnt < 3) {
-                    targetText.setText(targetText.text + '\n');
-                }
             }
+            // } else if (letEnterIdx == 35) {
+            //     letEnterIdx = 0;
+            //     line_cnt++;
+            //     if (line_cnt < 3) {
+            //         targetText.setText(targetText.text + '\n');
+            //     }
+            // }
 
             // 다음 글자 출력
             scene.time.delayedCall(typingSpeed, typeNextChar);
@@ -561,13 +575,14 @@ class EntranceScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 35) {
-                letEnterIdx = 0;
-                line_cnt++;
-                if (line_cnt < 3) {
-                    targetText.setText(targetText.text + '\n');
-                }
             }
+            // } else if (letEnterIdx == 35) {
+            //     letEnterIdx = 0;
+            //     line_cnt++;
+            //     if (line_cnt < 3) {
+            //         targetText.setText(targetText.text + '\n');
+            //     }
+            // }
 
             // 다음 글자 출력
             scene.time.delayedCall(typingSpeed, typeNextChar);
@@ -691,11 +706,14 @@ class ReceptionScene extends Phaser.Scene {
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
-                // 벽에 충돌 시 목표 경로를 현재 위치로 변경
-                this.targetPosition = { x: this.player.x, y: this.player.y };
-                this.isTouchInputActive = false; // 터치 입력 비활성화
-                this.isMovingX = false;
-                this.player.anims.stop(); // 애니메이션 정지
+                if (this.isTouchInputActive) {
+                    // 🔁 이동 방향 전환
+                    this.isMovingX = !this.isMovingX;
+        
+                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
+                    this.player.setVelocity(0);
+                    this.player.anims.stop();
+                }
             });
         });
 
@@ -785,37 +803,48 @@ class ReceptionScene extends Phaser.Scene {
             }
 
             // 터치 입력 처리 (터치 입력이 활성화된 경우에만)
-            if (!hasKeyboardInput && velocityX === 0 && velocityY === 0 && this.isTouchInputActive) {
-                const dx = this.targetPosition.x - this.player.x;
-                const dy = this.targetPosition.y - this.player.y;
+            const tolerance = 10;
+            const dx = this.targetPosition.x - this.player.x;
+            const dy = this.targetPosition.y - this.player.y;
 
+            let canMoveX = Math.abs(dx) > tolerance;
+            let canMoveY = Math.abs(dy) > tolerance;
+
+            if (this.isTouchInputActive) {
+                // 현재 X 축 이동 중
                 if (this.isMovingX) {
-                    if (Math.abs(dx) > 5) {
-                        if (dx > 0) {
-                            velocityX = speed;
-                            this.player.anims.play('walkRight', true);
-                        } else {
-                            velocityX = -speed;
-                            this.player.anims.play('walkLeft', true);
-                        }
+                    if (canMoveX) {
+                        velocityX = dx > 0 ? speed : -speed;
+                        this.player.anims.play(dx > 0 ? 'walkRight' : 'walkLeft', true);
                     } else {
-                        this.isMovingX = false;
+                        this.player.x = this.targetPosition.x;
+                        this.isMovingX = false; // X 완료 → Y로 넘어감
+                        this.player.setVelocityX(0);
                     }
                 } else {
-                    if (Math.abs(dy) > 5) {
-                        if (dy > 0) {
-                            velocityY = speed;
-                            this.player.anims.play('walkDown', true);
-                        } else {
-                            velocityY = -speed;
-                            this.player.anims.play('walkUp', true);
-                        }
+                    if (canMoveY) {
+                        velocityY = dy > 0 ? speed : -speed;
+                        this.player.anims.play(dy > 0 ? 'walkDown' : 'walkUp', true);
                     } else {
-                        this.player.setVelocity(0);
-                        this.player.anims.stop();
-                        this.isTouchInputActive = false; // 목표에 도달하면 터치 입력 비활성화
+                        this.player.y = this.targetPosition.y;
+
+                        if (canMoveX) {
+                            this.isMovingX = true; // Y 막혔지만 X 남음 → X 시도
+                            this.player.setVelocityY(0);
+                        } else {
+                            // 🎯 둘 다 못 가면 멈추기
+                            this.isTouchInputActive = false;
+                            this.player.setVelocity(0);
+                            this.player.anims.stop();
+
+                            // 마지막으로 좌표 정리
+                            this.player.x = this.targetPosition.x;
+                            this.player.y = this.targetPosition.y;
+                        }
                     }
                 }
+
+            
             } else if (velocityX === 0 && velocityY === 0) {
                 // 키보드 입력 후 멈췄을 때 애니메이션 정지
                 this.player.setVelocity(0);
@@ -835,7 +864,7 @@ class ReceptionScene extends Phaser.Scene {
             fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 700 }
+            // wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -975,13 +1004,14 @@ class ReceptionScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 35) {
-                letEnterIdx = 0;
-                line_cnt++;
-                if (line_cnt < 3) {
-                    targetText.setText(targetText.text + '\n');
-                }
             }
+            // } else if (letEnterIdx == 35) {
+            //     letEnterIdx = 0;
+            //     line_cnt++;
+            //     if (line_cnt < 3) {
+            //         targetText.setText(targetText.text + '\n');
+            //     }
+            // }
 
             // 다음 글자 출력
             scene.time.delayedCall(typingSpeed, typeNextChar);
@@ -1030,12 +1060,14 @@ class GalleryScene extends Phaser.Scene {
     }
     
     init(data) {
+
+
         if (data && data.returnToGallery) {
             this.playerStartX = 512;
-            this.playerStartY = 1100;
+            this.playerStartY = 1200;
         } else {
             this.playerStartX = 512;
-            this.playerStartY = 1100;
+            this.playerStartY = 1200;
         }
     
     }
@@ -1057,6 +1089,8 @@ class GalleryScene extends Phaser.Scene {
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
+
+
 
         // BGM 재생 (주석 처리 유지)
         // if (this.sound.get('galleryBgm')) {
@@ -1097,37 +1131,71 @@ class GalleryScene extends Phaser.Scene {
         this.targetPosition = { x: this.player.x, y: this.player.y };
         this.isMovingX = false;
         this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
+        
+        // NPC 이미지와 Zone 설정
+        this.galleryNpc = this.physics.add.sprite(512, 1100, 'player');  // 적절한 위치에
+        this.galleryNpc.setScale(2);
+        this.galleryNpc.setImmovable(true);
+        this.galleryNpc.setFrame(10); // 원하는 프레임
 
-        // 터치 입력 처리
+        this.galleryNpcZone = this.add.zone(512, 1100, 100, 100);
+        this.physics.add.existing(this.galleryNpcZone);
+        this.physics.add.overlap(this.player, this.galleryNpcZone, () => {
+            this.currentNpcZone = this.galleryNpcZone;
+        });
+
+        // 터치 처리
         this.input.on('pointerdown', (pointer) => {
             if (this.isInteracting && this.isWaitingForInput) {
-                console.log('Touch: Continuing typing');
+                // 대화창 글자 넘기기
                 this.isWaitingForInput = false;
                 this.continueTyping = true;
             } else if (!this.isInteracting) {
-                let isPaintingClicked = false;
-                this.paintingZones.forEach((zone, index) => {
-                    const zoneBounds = zone.getBounds();
-                    if (this.physics.world.overlap(this.player, zone) && 
-                        Phaser.Geom.Rectangle.ContainsPoint(zoneBounds, { x: pointer.x, y: pointer.y })) {
-                        console.log('Painting clicked at index:', index);
-                        this.checkPaintingInteraction();
-                        isPaintingClicked = true;
+                // 💬 NPC 클릭 처리
+                if (
+                    this.physics.world.overlap(this.player, this.galleryNpcZone) && // 플레이어가 NPC 근처에 있고
+                    Phaser.Geom.Rectangle.ContainsPoint(this.galleryNpcZone.getBounds(), pointer) // 클릭 위치가 NPC 위
+                ) {
+                    this.handleGalleryNpcInteraction(); // 👉 대화 시작
+                } else {
+                    // 🎯 그림 클릭 확인 또는 이동 처리
+                    let isPaintingClicked = false;
+                    this.paintingZones.forEach((zone, index) => {
+                        const zoneBounds = zone.getBounds();
+                        if (this.physics.world.overlap(this.player, zone) &&
+                            Phaser.Geom.Rectangle.ContainsPoint(zoneBounds, { x: pointer.x, y: pointer.y })) {
+                            this.checkPaintingInteraction();
+                            isPaintingClicked = true;
+                        }
+                    });
+        
+                    if (!isPaintingClicked) {
+                        this.targetPosition.x = pointer.x;
+                        this.targetPosition.y = pointer.y;
+                        this.isMovingX = true;
+                        this.isTouchInputActive = true;
                     }
-                });
-                // 그림 zone 외부 클릭 시 이동
-                if (!isPaintingClicked) {
-                    console.log('Moving to:', pointer.x, pointer.y);
-                    this.targetPosition.x = pointer.x;
-                    this.targetPosition.y = pointer.y;
-                    this.isMovingX = true;
-                    this.isTouchInputActive = true;
                 }
             }
         });
+        
+
+        // 충돌 예측 함수 추가
+        this.predictCollision = (x, y) => {
+            const bounds = this.player.getBounds();
+            const testRect = new Phaser.Geom.Rectangle(
+                x - bounds.width / 2,
+                y - bounds.height / 2,
+                bounds.width,
+                bounds.height
+            );
+            return this.walls.some(wall => Phaser.Geom.Intersects.RectangleToRectangle(testRect, wall.getBounds()));
+        };
 
         // 이동 불가능 영역 (벽면) 설정
         this.walls = [
+
+            this.physics.add.staticBody(475, 1070, 70, 70), // NPC
 
             this.physics.add.staticBody(0, 1250, 360, 50),
             this.physics.add.staticBody(660, 1250, 350, 50),
@@ -1135,20 +1203,20 @@ class GalleryScene extends Phaser.Scene {
             this.physics.add.staticBody(0, 965, 280, 50),
             this.physics.add.staticBody(735, 965, 300, 50),   
 
-            this.physics.add.staticBody(280, 800, 50, 215),
-            this.physics.add.staticBody(685, 800, 50, 215),
+            this.physics.add.staticBody(280, 820, 50, 195),
+            this.physics.add.staticBody(685, 820, 50, 195),
 
-            this.physics.add.staticBody(0, 800, 280, 50),
-            this.physics.add.staticBody(735, 800, 290, 50),           
+            this.physics.add.staticBody(0, 820, 280, 50),
+            this.physics.add.staticBody(735, 820, 290, 50),           
 
-            this.physics.add.staticBody(295, 435, 50, 205),
-            this.physics.add.staticBody(675, 435, 50, 205),
+            this.physics.add.staticBody(295, 455, 50, 185),
+            this.physics.add.staticBody(675, 455, 50, 185),
 
             this.physics.add.staticBody(0, 600, 295, 40),
             this.physics.add.staticBody(725, 600, 300, 40), 
 
-            this.physics.add.staticBody(0, 435, 295, 50),
-            this.physics.add.staticBody(725, 435, 300, 50), 
+            this.physics.add.staticBody(0, 455, 295, 50),
+            this.physics.add.staticBody(725, 455, 300, 50), 
 
             this.physics.add.staticBody(0, 240, 1025, 50),
 
@@ -1156,15 +1224,22 @@ class GalleryScene extends Phaser.Scene {
             this.physics.add.staticBody(1004, 0, 20, 1280)
 
         ];
+
+
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
-                // 벽에 충돌 시 목표 경로를 현재 위치로 변경
-                this.targetPosition = { x: this.player.x, y: this.player.y };
-                this.isTouchInputActive = false; // 터치 입력 비활성화
-                this.isMovingX = false;
-                this.player.anims.stop(); // 애니메이션 정지
+                if (this.isTouchInputActive) {
+                    // 🔁 이동 방향 전환
+                    this.isMovingX = !this.isMovingX;
+        
+                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
+                    this.player.setVelocity(0);
+                    this.player.anims.stop();
+                }
             });
         });
+        
+        
 
         // 출구 Zone
         this.exitZone = this.add.zone(512, 1280, 300, 40);
@@ -1178,11 +1253,14 @@ class GalleryScene extends Phaser.Scene {
         // Spacebar 입력 설정
         this.input.keyboard.on('keydown-SPACE', () => {
             if (this.isInteracting && this.isWaitingForInput) {
-                console.log('Space: Continuing typing');
                 this.isWaitingForInput = false;
                 this.continueTyping = true;
             } else if (!this.isInteracting) {
-                this.checkPaintingInteraction();
+                if (this.physics.world.overlap(this.player, this.galleryNpcZone)) {
+                    this.handleGalleryNpcInteraction();
+                } else {
+                    this.checkPaintingInteraction();
+                }
             }
         });
 
@@ -1192,6 +1270,9 @@ class GalleryScene extends Phaser.Scene {
         this.continueTyping = false; // 텍스트 이어쓰기 상태
         this.currentPaintingDesc = null;
         this.currentZone = null;
+
+        
+        this.awaitingConfirmation = false;  // 네/아니오 대기 중인지
 
         // 그림 설정
         const paintings = [
@@ -1257,37 +1338,48 @@ class GalleryScene extends Phaser.Scene {
             }
 
             // 터치 입력 처리 (터치 입력이 활성화된 경우에만)
-            if (!hasKeyboardInput && velocityX === 0 && velocityY === 0 && this.isTouchInputActive) {
-                const dx = this.targetPosition.x - this.player.x;
-                const dy = this.targetPosition.y - this.player.y;
+            const tolerance = 10;
+            const dx = this.targetPosition.x - this.player.x;
+            const dy = this.targetPosition.y - this.player.y;
 
+            let canMoveX = Math.abs(dx) > tolerance;
+            let canMoveY = Math.abs(dy) > tolerance;
+
+            if (this.isTouchInputActive) {
+                // 현재 X 축 이동 중
                 if (this.isMovingX) {
-                    if (Math.abs(dx) > 5) {
-                        if (dx > 0) {
-                            velocityX = speed;
-                            this.player.anims.play('walkRight', true);
-                        } else {
-                            velocityX = -speed;
-                            this.player.anims.play('walkLeft', true);
-                        }
+                    if (canMoveX) {
+                        velocityX = dx > 0 ? speed : -speed;
+                        this.player.anims.play(dx > 0 ? 'walkRight' : 'walkLeft', true);
                     } else {
-                        this.isMovingX = false;
+                        this.player.x = this.targetPosition.x;
+                        this.isMovingX = false; // X 완료 → Y로 넘어감
+                        this.player.setVelocityX(0);
                     }
                 } else {
-                    if (Math.abs(dy) > 5) {
-                        if (dy > 0) {
-                            velocityY = speed;
-                            this.player.anims.play('walkDown', true);
-                        } else {
-                            velocityY = -speed;
-                            this.player.anims.play('walkUp', true);
-                        }
+                    if (canMoveY) {
+                        velocityY = dy > 0 ? speed : -speed;
+                        this.player.anims.play(dy > 0 ? 'walkDown' : 'walkUp', true);
                     } else {
-                        this.player.setVelocity(0);
-                        this.player.anims.stop();
-                        this.isTouchInputActive = false; // 목표에 도달하면 터치 입력 비활성화
+                        this.player.y = this.targetPosition.y;
+
+                        if (canMoveX) {
+                            this.isMovingX = true; // Y 막혔지만 X 남음 → X 시도
+                            this.player.setVelocityY(0);
+                        } else {
+                            // 🎯 둘 다 못 가면 멈추기
+                            this.isTouchInputActive = false;
+                            this.player.setVelocity(0);
+                            this.player.anims.stop();
+
+                            // 마지막으로 좌표 정리
+                            this.player.x = this.targetPosition.x;
+                            this.player.y = this.targetPosition.y;
+                        }
                     }
                 }
+            
+            
             } else if (velocityX === 0 && velocityY === 0) {
                 // 키보드 입력 후 멈췄을 때 애니메이션 정지
                 this.player.setVelocity(0);
@@ -1301,12 +1393,41 @@ class GalleryScene extends Phaser.Scene {
         this.player.setVelocity(velocityX, velocityY);
     }
 
+    // NPC 상호작용 처리 메서드 (갤러리용)
+    handleGalleryNpcInteraction() {
+        const hasTalked = this.registry.get('hasTalkedToGalleryNpc');
+        const hasConfirmed = this.registry.get('awaitingConfirmation');
+        console.log('[NPC] hasTalkedToGalleryNpc:', hasTalked);
+
+        if (!hasTalked) {
+            const introText = "안녕하세요, 이 곳은 JH 작가님의 작품들을 전시해 놓은 장소입니다.\nJH님이 하경님과 만나면서 간직한 사진들을 이 갤러리에 기증하셨어요.\n그러면 지금부터 작품들을 자유롭게 둘러보시고,\n감상을 충분히 하셨다면 저에게 말씀해 주세요.";
+            this.showNpcDescription(introText, null, () => {
+                console.log('[NPC] First interaction complete');
+                this.registry.set('hasTalkedToGalleryNpc', true);
+            });
+        } else {
+            if (!hasConfirmed) {
+                console.log('[NPC] Showing confirmation prompt');
+                const confirmText = "충분히 감상하셨나요?\n저에게 다시 말을 걸어주시면, 건물의 루프탑으로 안내하겠습니다.\nJH님이 기다리고 계세요.";
+                this.showNpcDescription(confirmText, null, () => {
+                    this.registry.set('awaitingConfirmation', true);
+                });
+            } else {
+                const confirmTrueText = "그러면 건물의 루프탑 이동하시겠습니다.";
+                this.showNpcDescription(confirmTrueText, null, () => {
+                    // TBD
+                });
+            }
+        }
+    }
+
+
     checkPaintingInteraction() {
         if (this.currentZone) {
             this.paintingZones.forEach((zone, index) => {
                 if (zone === this.currentZone && this.physics.world.overlap(this.player, zone)) {
                     const painting = this.paintings[index];
-                    this.showDescription(painting.desc, painting.imageKey);
+                    this.showPaintingDescription(painting.desc, painting.imageKey);
                     this.isInteracting = true;
                     this.currentPaintingDesc = painting.desc;
                     this.currentZone = null;
@@ -1315,7 +1436,36 @@ class GalleryScene extends Phaser.Scene {
         }
     }
 
-    showDescription(text, imageKey) {
+    // NPC 전용 대화창
+    showNpcDescription(text, imageKey, callback) {
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontSize: '25px', 
+            color: '#fff', 
+            align: 'center', 
+            // wordWrap: { width: 700 }
+        }).setOrigin(0.5);
+
+        dialogBox.setDepth(10);
+        dialogText.setDepth(11);
+
+        this.isInteracting = true;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+
+        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+            fontSize: '25px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        this.typeText(text, dialogText, this, callback);
+
+        this.dialogBox = dialogBox;
+        this.dialogText = dialogText;
+    }
+
+
+    showPaintingDescription(text, imageKey) {
         const paintingImage = this.paintingImages[this.paintings.findIndex(p => p.imageKey === imageKey)];
         paintingImage.setPosition(512, 624);
         paintingImage.setVisible(true);
@@ -1331,7 +1481,7 @@ class GalleryScene extends Phaser.Scene {
             fontSize: '25px', 
             color: '#fff', 
             align: 'center', 
-            wordWrap: { width: 700 }
+            // wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
         dialogBox.setDepth(10);
@@ -1358,32 +1508,37 @@ class GalleryScene extends Phaser.Scene {
     }
     
     hideDescription() {
-        if (this.dialogBox && this.dialogText) {
-            this.dialogBox.destroy();
-            this.dialogText.destroy();
-        }
+        // 대화 텍스트 및 박스 제거
+        if (this.dialogBox) this.dialogBox.destroy();
+        if (this.dialogText) this.dialogText.destroy();
+    
+        // ▼ 깜빡이 제거
+        if (this.arrowIndicatorBlinkEvent) this.arrowIndicatorBlinkEvent.remove();
+        if (this.arrowIndicator) this.arrowIndicator.destroy();
+    
+        // 그림 설명이라면 그림 이미지와 액자도 제거
         if (this.currentPaintingImage) {
             this.currentPaintingImage.setVisible(false);
             this.currentPaintingImage.setPosition(0, 0);
+            this.currentPaintingImage = null;
         }
+    
         if (this.frame) {
             this.frame.destroy();
+            this.frame = null;
         }
-        if (this.arrowIndicator) {
-            if (this.arrowIndicatorBlinkEvent) {
-                this.arrowIndicatorBlinkEvent.remove();
-            }
-            this.arrowIndicator.destroy();
-        }
+    
+        // 상태 초기화
+        this.dialogBox = null;
+        this.dialogText = null;
+        this.arrowIndicator = null;
+        this.arrowIndicatorBlinkEvent = null;
         this.isInteracting = false;
         this.isWaitingForInput = false;
         this.continueTyping = false;
         this.currentPaintingDesc = null;
-        this.currentPaintingImage = null;
-        this.frame = null;
-        this.arrowIndicator = null;
-        this.arrowIndicatorBlinkEvent = null;
     }
+    
 
     typeText(text, targetText, scene, callback) {
         let currentIndex = 0;
@@ -1485,13 +1640,14 @@ class GalleryScene extends Phaser.Scene {
             if (text[currentIndex] === '\n') {
                 letEnterIdx = 0;
                 line_cnt++;
-            } else if (letEnterIdx == 35) {
-                letEnterIdx = 0;
-                line_cnt++;
-                if (line_cnt < 3) {
-                    targetText.setText(targetText.text + '\n');
-                }
             }
+            // } else if (letEnterIdx == 35) {
+            //     letEnterIdx = 0;
+            //     line_cnt++;
+            //     if (line_cnt < 3) {
+            //         targetText.setText(targetText.text + '\n');
+            //     }
+            // }
 
             // 다음 글자 출력
             scene.time.delayedCall(typingSpeed, typeNextChar);
@@ -1533,6 +1689,8 @@ const config = {
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
         preBoot: (game) => {
             game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화
+            game.registry.set('hasTalkedToGalleryNpc', false); // 게임 시작 시 한 번만 실행
+            game.registry.set('awaitingConfirmation', false); // 게임 시작 시 한 번만 실행
         }
     }
 };

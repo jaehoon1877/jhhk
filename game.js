@@ -1415,7 +1415,7 @@ class GalleryScene extends Phaser.Scene {
             } else {
                 const confirmTrueText = "그러면 건물의 루프탑 이동하시겠습니다.";
                 this.showNpcDescription(confirmTrueText, null, () => {
-                    // TBD
+                    this.scene.start('RooftopScene');
                 });
             }
         }
@@ -1665,6 +1665,605 @@ class GalleryScene extends Phaser.Scene {
     }
 }
 
+class RooftopScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'RooftopScene' });
+    }
+
+    init(data) {
+        this.playerStartX = 512;
+        this.playerStartY = 1200;
+
+    }
+
+    preload() {
+        this.load.image('rooftopBg', 'assets/rooftop.png');
+        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
+        // this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
+        // 입장권 이미지 로드
+        // this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
+    }
+
+    create() {
+        this.add.image(512, 640, 'rooftopBg');
+        this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
+        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setCollideWorldBounds(true);
+        this.player.setFrame(4);
+
+        // // BGM 재생
+        // if (this.sound.get('entranceBgm')) {
+        //     // this.sound.removeByKey('entranceBgm');
+        // } else {
+        //     this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
+        //     this.entranceBgm.play();
+        // }
+
+        // 애니메이션 설정
+        this.anims.create({
+            key: 'walkLeft',
+            frames: this.anims.generateFrameNumbers('player', { start: 15, end: 17 }),
+            frameRate: 10,
+            repeat: -1
+        });
+        this.anims.create({
+            key: 'walkRight',
+            frames: this.anims.generateFrameNumbers('player', { start: 27, end: 29 }),
+            frameRate: 10,
+            repeat: -1
+        });
+        this.anims.create({
+            key: 'walkUp',
+            frames: this.anims.generateFrameNumbers('player', { start: 39, end: 41 }),
+            frameRate: 10,
+            repeat: -1
+        });
+        this.anims.create({
+            key: 'walkDown',
+            frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        // 입력 설정
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.targetPosition = { x: this.player.x, y: this.player.y };
+        this.isMovingX = false;
+        this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
+
+        // NPC 생성 (위치: x: 400, y: 430)
+        this.npc = this.physics.add.sprite(512, 500, 'player');
+        this.npc.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.npc.setImmovable(true);
+        this.npc.setFrame(1); // NPC 스프라이트 프레임
+
+        // NPC 상호작용 Zone
+        this.npcZone = this.add.zone(512, 500, 150, 150);
+        this.physics.add.existing(this.npcZone);
+        this.physics.add.overlap(this.player, this.npcZone, () => {
+            // 상호작용 프롬프트 표시 (필요 시 추가 가능)
+        }, null, this);
+
+        // 터치 입력 처리
+        this.input.on('pointerdown', (pointer) => {
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Touch: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (this.isShowingTicket && this.isWaitingForTicketInput) {
+                console.log('Touch: Closing ticket message');
+                this.isWaitingForTicketInput = false;
+                this.hideTicketAndMessage();
+            } else if (!this.isInteracting && !this.isShowingTicket) {
+                if (this.physics.world.overlap(this.player, this.npcZone) &&
+                    Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handleNpcInteraction();
+                } else {
+                    this.targetPosition.x = pointer.x;
+                    this.targetPosition.y = pointer.y;
+                    this.isMovingX = true;
+                    this.isTouchInputActive = true; // 터치 입력 활성화
+                }
+            }
+        });
+
+        // Spacebar 입력 설정
+        this.input.keyboard.on('keydown-SPACE', () => {
+            if (this.isInteracting && this.isWaitingForInput) {
+                console.log('Space: Continuing typing');
+                this.isWaitingForInput = false;
+                this.continueTyping = true;
+            } else if (this.isShowingTicket && this.isWaitingForTicketInput) {
+                console.log('Space: Closing ticket message');
+                this.isWaitingForTicketInput = false;
+                this.hideTicketAndMessage();
+            } else if (!this.isInteracting && !this.isShowingTicket) {
+                if (this.physics.world.overlap(this.player, this.npcZone)) {
+                    this.handleNpcInteraction();
+                }
+            }
+        });
+
+        // 벽 설정
+        this.walls = [
+            this.physics.add.staticBody(490, 500, 45, 45), // NPC
+            this.physics.add.staticBody(330, 0, 45, 1300), // 
+            this.physics.add.staticBody(650, 0, 45, 1300), // 
+            this.physics.add.staticBody(0, 400, 1100, 45), // 
+
+        ];
+        this.walls.forEach(wall => {
+            this.physics.add.collider(this.player, wall, () => {
+                if (this.isTouchInputActive) {
+                    // 🔁 이동 방향 전환
+                    this.isMovingX = !this.isMovingX;
+        
+                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
+                    this.player.setVelocity(0);
+                    this.player.anims.stop();
+                }
+            });
+        });
+
+        // 갤러리 입구 Zone (ReceptionScene으로 이동)
+        this.entryZone = this.add.zone(510, 400, 150, 50);
+        this.physics.add.existing(this.entryZone);
+        this.physics.add.overlap(this.player, this.entryZone, () => {
+            this.scene.start('ReceptionScene', { returnToEntrance: true });
+        });
+
+        // 초기 상태
+        this.isInteracting = false;
+        this.isWaitingForInput = false; // ▼ 표시 대기 상태
+        this.continueTyping = false; // 텍스트 이어쓰기 상태
+        this.isShowingTicket = false; // 입장권 메시지 표시 중인지 여부
+    }
+
+    update() {
+        const speed = 400;
+        let velocityX = 0;
+        let velocityY = 0;
+
+        if (!this.isInteracting && !this.isShowingTicket) {
+            // 키보드 입력 처리
+            let hasKeyboardInput = false;
+            if (this.cursors.left.isDown) {
+                velocityX = -speed;
+                this.player.anims.play('walkLeft', true);
+                hasKeyboardInput = true;
+            } else if (this.cursors.right.isDown) {
+                velocityX = speed;
+                this.player.anims.play('walkRight', true);
+                hasKeyboardInput = true;
+            } else if (this.cursors.up.isDown) {
+                velocityY = -speed;
+                this.player.anims.play('walkUp', true);
+                hasKeyboardInput = true;
+            } else if (this.cursors.down.isDown) {
+                velocityY = speed;
+                this.player.anims.play('walkDown', true);
+                hasKeyboardInput = true;
+            }
+
+            // 키보드 입력이 있으면 터치 입력 비활성화
+            if (hasKeyboardInput) {
+                this.isTouchInputActive = false;
+                this.targetPosition = { x: this.player.x, y: this.player.y };
+                this.isMovingX = false;
+            }
+
+            // 터치 입력 처리 (터치 입력이 활성화된 경우에만)
+            const tolerance = 10;
+            const dx = this.targetPosition.x - this.player.x;
+            const dy = this.targetPosition.y - this.player.y;
+
+            let canMoveX = Math.abs(dx) > tolerance;
+            let canMoveY = Math.abs(dy) > tolerance;
+
+            if (this.isTouchInputActive) {
+                // 현재 X 축 이동 중
+                if (this.isMovingX) {
+                    if (canMoveX) {
+                        velocityX = dx > 0 ? speed : -speed;
+                        this.player.anims.play(dx > 0 ? 'walkRight' : 'walkLeft', true);
+                    } else {
+                        this.player.x = this.targetPosition.x;
+                        this.isMovingX = false; // X 완료 → Y로 넘어감
+                        this.player.setVelocityX(0);
+                    }
+                } else {
+                    if (canMoveY) {
+                        velocityY = dy > 0 ? speed : -speed;
+                        this.player.anims.play(dy > 0 ? 'walkDown' : 'walkUp', true);
+                    } else {
+                        this.player.y = this.targetPosition.y;
+
+                        if (canMoveX) {
+                            this.isMovingX = true; // Y 막혔지만 X 남음 → X 시도
+                            this.player.setVelocityY(0);
+                        } else {
+                            // 🎯 둘 다 못 가면 멈추기
+                            this.isTouchInputActive = false;
+                            this.player.setVelocity(0);
+                            this.player.anims.stop();
+
+                            // 마지막으로 좌표 정리
+                            this.player.x = this.targetPosition.x;
+                            this.player.y = this.targetPosition.y;
+                        }
+                    }
+                }
+                
+            } else if (velocityX === 0 && velocityY === 0) {
+                // 키보드 입력 후 멈췄을 때 애니메이션 정지
+                this.player.setVelocity(0);
+                this.player.anims.stop();
+            }
+        } else {
+            this.player.setVelocity(0);
+            this.player.anims.stop();
+        }
+
+        this.player.setVelocity(velocityX, velocityY);
+    }
+
+    // 대화창 표시 메서드
+    showDescription(text, imageKey) {
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontSize: '25px', 
+            color: '#fff', 
+            align: 'center', 
+            // wordWrap: { width: 700 }
+        }).setOrigin(0.5);
+
+        dialogBox.setDepth(10);
+        dialogText.setDepth(11);
+
+        this.isInteracting = true;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+            fontSize: '25px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        const callback = () => {
+        };
+        // // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
+        // const callback = () => {
+        //     if (this.registry.get('hasReceivedTicket')==false) {
+        //         console.log('First NPC conversation finished, preparing to show ticket.');
+        //         // 대화창이 완전히 사라진 후 입장권 표시
+        //         this.time.delayedCall(500, () => {
+        //             this.showTicketAndMessage();
+        //         });
+        //     }
+        // };
+
+        this.typeText(text, dialogText, this, callback);
+
+        this.dialogBox = dialogBox;
+        this.dialogText = dialogText;
+    }
+
+    // 입장권 이미지와 "갤러리 입장권을 획득했습니다." 메시지 표시
+    showTicketAndMessage() {
+        // 입장권 이미지 표시
+        this.ticketImage = this.add.image(512, 524, 'ticket').setDepth(12);
+        this.ticketImage.setDisplaySize(600, 600); // 입장권 이미지 크기 조정 (필요에 따라 수정)
+        this.tweens.add({
+            targets: this.ticketImage,
+            alpha: 1,
+            duration: 500,
+            ease: 'Linear'
+        });
+        console.log('Ticket image displayed at (400, 300).');
+
+        // 입장권 획득 메시지 표시
+        const ticketMessage = '(갤러리 입장권을 획득했습니다.)';
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontSize: '25px', 
+            color: '#fff', 
+            align: 'center', 
+            // wordWrap: { width: 700 }
+        }).setOrigin(0.5);
+
+        dialogBox.setDepth(10);
+        dialogText.setDepth(11);
+
+        this.isShowingTicket = true;
+        this.isWaitingForTicketInput = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.ticketArrowIndicator = this.add.text(800, 1240, '▼', {
+            fontSize: '25px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        
+
+        this.typeTicketText(ticketMessage, dialogText, this);
+
+        this.ticketDialogBox = dialogBox;
+        this.ticketDialogText = dialogText;
+    }
+
+    // 입장권 메시지 숨김 메서드
+    hideTicketAndMessage() {
+        if (this.ticketDialogBox && this.ticketDialogText) {
+            this.ticketDialogBox.destroy();
+            this.ticketDialogText.destroy();
+        }
+        if (this.ticketArrowIndicator) {
+            if (this.ticketArrowIndicatorBlinkEvent) {
+                this.ticketArrowIndicatorBlinkEvent.remove();
+            }
+            this.ticketArrowIndicator.destroy();
+        }
+        if (this.ticketImage) {
+            this.ticketImage.destroy();
+            console.log('Ticket image removed.');
+        }
+        this.ticketDialogBox = null;
+        this.ticketDialogText = null;
+        this.ticketArrowIndicator = null;
+        this.ticketArrowIndicatorBlinkEvent = null;
+        this.ticketImage = null;
+        this.isShowingTicket = false;
+        this.isWaitingForTicketInput = false;
+
+        // 전역 상태 업데이트
+        this.registry.set('hasReceivedTicket', true);
+        console.log('hasReceivedTicket set to true in registry.');
+    }
+
+    // 대화창 숨김 메서드
+    hideDescription() {
+        if (this.dialogBox && this.dialogText) {
+            this.dialogBox.destroy();
+            this.dialogText.destroy();
+        }
+        if (this.arrowIndicator) {
+            if (this.arrowIndicatorBlinkEvent) {
+                this.arrowIndicatorBlinkEvent.remove();
+            }
+            this.arrowIndicator.destroy();
+        }
+        this.dialogBox = null;
+        this.dialogText = null;
+        this.arrowIndicator = null;
+        this.arrowIndicatorBlinkEvent = null;
+        this.isInteracting = false;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+    }
+
+    // 텍스트 타이핑 메서드 (대화창용)
+    typeText(text, targetText, scene, callback) {
+        let currentIndex = 0;
+        let letEnterIdx = 0;
+        let line_cnt = 1;
+        const typingSpeed = 80;
+
+        const typeNextChar = () => {
+            // 텍스트 출력이 완료된 경우
+            if (currentIndex >= text.length) {
+                // ▼ 표시를 띄우고 입력 대기
+                console.log('Text fully displayed, waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+            }
+
+            // ▼ 표시 중 사용자 입력 대기
+            if (scene.isWaitingForInput) {
+                if (scene.continueTyping) {
+                    console.log('Continuing typing after user input');
+                    if (currentIndex >= text.length) {
+                        // 텍스트가 모두 출력된 경우, 콜백 호출 후 대화창 닫기
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
+                        }
+                        scene.arrowIndicator.setVisible(false);
+                        if (callback) {
+                            callback();
+                            console.log('Callback executed, currentIndex:', currentIndex, 'text.length:', text.length);
+                        }
+                        scene.hideDescription(); // 대화창 닫기
+                        return; // 루프 종료
+                    } else {
+                        // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        targetText.setText(''); // 텍스트 초기화
+                        letEnterIdx = 0;
+                        line_cnt = 1;
+                        scene.isWaitingForInput = false;
+                        if (scene.arrowIndicatorBlinkEvent) {
+                            scene.arrowIndicatorBlinkEvent.remove();
+                            scene.arrowIndicatorBlinkEvent = null;
+                        }
+                        scene.arrowIndicator.setVisible(false);
+                        scene.continueTyping = false;
+                    }
+                } else {
+                    // 사용자 입력을 기다리는 동안 루프 유지
+                    scene.time.delayedCall(typingSpeed, typeNextChar);
+                    return;
+                }
+            }
+
+            // 2줄 초과 시 ▼ 표시
+            if (line_cnt >= 3) {
+                console.log('Waiting for user input at index:', currentIndex);
+                scene.isWaitingForInput = true;
+                scene.arrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.arrowIndicatorBlinkEvent) {
+                    scene.arrowIndicatorBlinkEvent.remove();
+                    scene.arrowIndicatorBlinkEvent = null;
+                }
+                scene.arrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.arrowIndicator) {
+                            scene.arrowIndicator.setVisible(!scene.arrowIndicator.visible);
+                            console.log('Arrow indicator visibility toggled to:', scene.arrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                scene.time.delayedCall(typingSpeed, typeNextChar);
+                return;
+            }
+
+            // 다음 글자 출력
+            targetText.setText(targetText.text + text[currentIndex]);
+            currentIndex++;
+            letEnterIdx++;
+
+            // 줄바꿈 처리
+            if (text[currentIndex] === '\n') {
+                letEnterIdx = 0;
+                line_cnt++;
+            }
+            // } else if (letEnterIdx == 35) {
+            //     letEnterIdx = 0;
+            //     line_cnt++;
+            //     if (line_cnt < 3) {
+            //         targetText.setText(targetText.text + '\n');
+            //     }
+            // }
+
+            // 다음 글자 출력
+            scene.time.delayedCall(typingSpeed, typeNextChar);
+        };
+
+        // 첫 글자부터 시작
+        typeNextChar();
+    }
+
+    // 입장권 텍스트 타이핑 메서드
+    typeTicketText(text, targetText, scene) {
+        let currentIndex = 0;
+        let letEnterIdx = 0;
+        let line_cnt = 1;
+        const typingSpeed = 80;
+
+        const typeNextChar = () => {
+            // 텍스트 출력이 완료된 경우
+            if (currentIndex >= text.length) {
+                // ▼ 표시를 띄우고 입력 대기
+                console.log('Ticket text fully displayed, waiting for user input at index:', currentIndex);
+                scene.isWaitingForTicketInput = true;
+                scene.ticketArrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.ticketArrowIndicatorBlinkEvent) {
+                    scene.ticketArrowIndicatorBlinkEvent.remove();
+                    scene.ticketArrowIndicatorBlinkEvent = null;
+                }
+                scene.ticketArrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.ticketArrowIndicator) {
+                            scene.ticketArrowIndicator.setVisible(!scene.ticketArrowIndicator.visible);
+                            console.log('Ticket arrow indicator visibility toggled to:', scene.ticketArrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                return; // 루프 종료
+            }
+
+            // 2줄 초과 시 ▼ 표시 (입장권 메시지는 한 줄이므로 이 조건은 필요 없을 수 있음)
+            if (line_cnt >= 3) {
+                console.log('Waiting for user input at index:', currentIndex);
+                scene.isWaitingForTicketInput = true;
+                scene.ticketArrowIndicator.setVisible(true);
+                // ▼ 깜빡임 효과
+                if (scene.ticketArrowIndicatorBlinkEvent) {
+                    scene.ticketArrowIndicatorBlinkEvent.remove();
+                    scene.ticketArrowIndicatorBlinkEvent = null;
+                }
+                scene.ticketArrowIndicatorBlinkEvent = scene.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (scene.ticketArrowIndicator) {
+                            scene.ticketArrowIndicator.setVisible(!scene.ticketArrowIndicator.visible);
+                            console.log('Ticket arrow indicator visibility toggled to:', scene.ticketArrowIndicator.visible);
+                        }
+                    },
+                    loop: true
+                });
+                scene.time.delayedCall(typingSpeed, typeNextChar);
+                return;
+            }
+
+            // 다음 글자 출력
+            targetText.setText(targetText.text + text[currentIndex]);
+            currentIndex++;
+            letEnterIdx++;
+
+            // 줄바꿈 처리
+            if (text[currentIndex] === '\n') {
+                letEnterIdx = 0;
+                line_cnt++;
+            }
+            // } else if (letEnterIdx == 35) {
+            //     letEnterIdx = 0;
+            //     line_cnt++;
+            //     if (line_cnt < 3) {
+            //         targetText.setText(targetText.text + '\n');
+            //     }
+            // }
+
+            // 다음 글자 출력
+            scene.time.delayedCall(typingSpeed, typeNextChar);
+        };
+
+        // 첫 글자부터 시작
+        typeNextChar();
+    }
+
+    // NPC 상호작용 처리 메서드
+    handleNpcInteraction() {
+        this.isInteracting = true;
+        let dialogText;
+        dialogText = '안녕 하경아! 그림들 구경 잘 했어??\n\n 오늘 우리 400일 이더라! 완전 뜻깊은 날이지!ㅎㅎ\n 항상 사랑해♥';
+        this.showDescription(dialogText, null);
+    }
+
+    shutdown() {
+        if (this.entranceBgm) {
+            this.entranceBgm.stop();
+            this.entranceBgm.destroy();
+        }
+        if (this.interactionText) {
+            this.interactionText.destroy();
+        }
+        if (this.ticketImage) {
+            this.ticketImage.destroy();
+        }
+    }
+}
+
 // 게임 설정
 const config = {
     type: Phaser.AUTO,
@@ -1685,7 +2284,7 @@ const config = {
         width: 1024,
         height: 1280
     },
-    scene: [EntranceScene, ReceptionScene,GalleryScene],
+    scene: [EntranceScene, ReceptionScene,GalleryScene,RooftopScene],
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
         preBoot: (game) => {
             game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화

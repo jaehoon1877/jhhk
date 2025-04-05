@@ -263,12 +263,13 @@ class EntranceScene extends Phaser.Scene {
     showDescription(text, imageKey) {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
-            fontSize: '25px', 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
         }).setOrigin(0.5);
-
+        dialogText.setLineSpacing(10);
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
@@ -278,7 +279,7 @@ class EntranceScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(880, 1230, '▼', {
-            fontSize: '25px',
+            fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -316,12 +317,13 @@ class EntranceScene extends Phaser.Scene {
         const ticketMessage = '(갤러리 입장권을 획득했습니다.)';
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
-            fontSize: '25px', 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
         }).setOrigin(0.5);
-
+        dialogText.setLineSpacing(10);
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
@@ -330,7 +332,7 @@ class EntranceScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.ticketArrowIndicator = this.add.text(800, 1240, '▼', {
-            fontSize: '25px',
+            fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -397,6 +399,7 @@ class EntranceScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
+        let is_skip = 0;
         const typingSpeed = 80;
 
         const typeNextChar = () => {
@@ -442,6 +445,9 @@ class EntranceScene extends Phaser.Scene {
                         return; // 루프 종료
                     } else {
                         // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        if (text[currentIndex] === '\n') {
+                            currentIndex++;
+                        }
                         targetText.setText(''); // 텍스트 초기화
                         letEnterIdx = 0;
                         line_cnt = 1;
@@ -461,8 +467,11 @@ class EntranceScene extends Phaser.Scene {
             }
 
             // 2줄 초과 시 ▼ 표시
-            if (line_cnt >= 3) {
-                console.log('Waiting for user input at index:', currentIndex);
+            if (line_cnt === 3) {
+                if (is_skip === 0) {
+                    currentIndex +=1;
+                    is_skip = 1;
+                }
                 scene.isWaitingForInput = true;
                 scene.arrowIndicator.setVisible(true);
                 // ▼ 깜빡임 효과
@@ -515,6 +524,7 @@ class EntranceScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
+        let is_skip = 0;
         const typingSpeed = 80;
 
         const typeNextChar = () => {
@@ -543,8 +553,11 @@ class EntranceScene extends Phaser.Scene {
             }
 
             // 2줄 초과 시 ▼ 표시 (입장권 메시지는 한 줄이므로 이 조건은 필요 없을 수 있음)
-            if (line_cnt >= 3) {
-                console.log('Waiting for user input at index:', currentIndex);
+            if (line_cnt === 3) {
+                if (is_skip === 0) {
+                    currentIndex +=1;
+                    is_skip = 1;
+                }
                 scene.isWaitingForTicketInput = true;
                 scene.ticketArrowIndicator.setVisible(true);
                 // ▼ 깜빡임 효과
@@ -861,12 +874,13 @@ class ReceptionScene extends Phaser.Scene {
     showDescription(text, imageKey, callback) {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
-            fontSize: '25px', 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
         }).setOrigin(0.5);
-
+        dialogText.setLineSpacing(10);
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
@@ -875,7 +889,7 @@ class ReceptionScene extends Phaser.Scene {
         this.continueTyping = false;
 
         this.arrowIndicator = this.add.text(880, 1230, '▼', {
-            fontSize: '25px',
+            fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -909,6 +923,7 @@ class ReceptionScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
+        let is_skip = 0;
         const typingSpeed = 80;
 
         const typeNextChar = () => {
@@ -953,6 +968,9 @@ class ReceptionScene extends Phaser.Scene {
                         return; // 루프 종료
                     } else {
                         // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        if (text[currentIndex] === '\n') {
+                            currentIndex++;
+                        }
                         targetText.setText(''); // 텍스트 초기화
                         letEnterIdx = 0;
                         line_cnt = 1;
@@ -972,8 +990,11 @@ class ReceptionScene extends Phaser.Scene {
             }
 
             // 2줄 초과 시 ▼ 표시
-            if (line_cnt >= 3) {
-                console.log('Waiting for user input at index:', currentIndex);
+            if (line_cnt === 3) {
+                if (is_skip === 0) {
+                    currentIndex +=1;
+                    is_skip = 1;
+                }
                 scene.isWaitingForInput = true;
                 scene.arrowIndicator.setVisible(true);
                 // ▼ 깜빡임 효과
@@ -1074,11 +1095,13 @@ class GalleryScene extends Phaser.Scene {
 
     preload() {
         this.load.image('galleryBg', 'assets/gallery.png');
-        this.load.image('painting1', 'assets/painting1.png');
+        this.load.image('painting1', 'assets/painting8.png');
         this.load.image('painting2', 'assets/painting2.png');
-        this.load.image('painting3', 'assets/painting3.png');
-        this.load.image('painting4', 'assets/painting4.png');
+        this.load.image('painting3', 'assets/painting9.png');
+        this.load.image('painting4', 'assets/painting10.png');
         this.load.image('painting5', 'assets/painting5.png');
+        this.load.image('painting6', 'assets/painting6.png');
+        this.load.image('painting7', 'assets/painting7.png');
         this.load.spritesheet('player', 'assets/player.png', { frameWidth: 32, frameHeight: 48 });
         this.load.audio('galleryBgm', 'assets/gallery_bgm.mp3');
     }
@@ -1133,12 +1156,12 @@ class GalleryScene extends Phaser.Scene {
         this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
         
         // NPC 이미지와 Zone 설정
-        this.galleryNpc = this.physics.add.sprite(512, 1100, 'player');  // 적절한 위치에
+        this.galleryNpc = this.physics.add.sprite(50, 1200, 'player');  // 적절한 위치에
         this.galleryNpc.setScale(2);
         this.galleryNpc.setImmovable(true);
-        this.galleryNpc.setFrame(10); // 원하는 프레임
+        this.galleryNpc.setFrame(34); // 원하는 프레임
 
-        this.galleryNpcZone = this.add.zone(512, 1100, 100, 100);
+        this.galleryNpcZone = this.add.zone(50, 1200, 100, 100);
         this.physics.add.existing(this.galleryNpcZone);
         this.physics.add.overlap(this.player, this.galleryNpcZone, () => {
             this.currentNpcZone = this.galleryNpcZone;
@@ -1195,7 +1218,7 @@ class GalleryScene extends Phaser.Scene {
         // 이동 불가능 영역 (벽면) 설정
         this.walls = [
 
-            this.physics.add.staticBody(475, 1070, 70, 70), // NPC
+            this.physics.add.staticBody(20, 1170, 70, 70), // NPC
 
             this.physics.add.staticBody(0, 1250, 360, 50),
             this.physics.add.staticBody(660, 1250, 350, 50),
@@ -1242,7 +1265,7 @@ class GalleryScene extends Phaser.Scene {
         
 
         // 출구 Zone
-        this.exitZone = this.add.zone(512, 1280, 300, 40);
+        this.exitZone = this.add.zone(512, 1280, 300, 20);
         this.physics.add.existing(this.exitZone);
         this.physics.add.overlap(this.player, this.exitZone, () => {
             this.player.setVelocity(0);
@@ -1276,13 +1299,13 @@ class GalleryScene extends Phaser.Scene {
 
         // 그림 설정
         const paintings = [
-            { x: 155, y: 235, x_zone: 210, y_zone: 150, key: 'painting1', desc: '해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당해가 예쁘당', imageKey: 'painting1' },
+            { x: 155, y: 235, x_zone: 210, y_zone: 150, key: 'painting1', desc: 'asd', imageKey: 'painting1' },
             { x: 512, y: 235, x_zone: 260, y_zone: 150, key: 'painting2', desc: 'An abstract art piece.', imageKey: 'painting2' },
             { x: 865, y: 235, x_zone: 210, y_zone: 150, key: 'painting3', desc: 'A starry night scene.', imageKey: 'painting3' },
             { x: 150, y: 605, x_zone: 230, y_zone: 140, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting4' },
             { x: 865, y: 605, x_zone: 230, y_zone: 140, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5'} ,
-            { x: 140, y: 975, x_zone: 240, y_zone: 145, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting5'},
-            { x: 875, y: 975, x_zone: 240, y_zone: 145, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5'}
+            { x: 140, y: 975, x_zone: 240, y_zone: 145, key: 'painting6', desc: 'A peaceful landscape.', imageKey: 'painting6'},
+            { x: 875, y: 975, x_zone: 240, y_zone: 145, key: 'painting7', desc: 'A modern portrait.', imageKey: 'painting7'}
         ];
 
         this.paintingZones = [];
@@ -1400,7 +1423,7 @@ class GalleryScene extends Phaser.Scene {
         console.log('[NPC] hasTalkedToGalleryNpc:', hasTalked);
 
         if (!hasTalked) {
-            const introText = "안녕하세요, 이 곳은 JH 작가님의 작품들을 전시해 놓은 장소입니다.\nJH님이 하경님과 만나면서 간직한 사진들을 이 갤러리에 기증하셨어요.\n그러면 지금부터 작품들을 자유롭게 둘러보시고,\n감상을 충분히 하셨다면 저에게 말씀해 주세요.";
+            const introText = "안녕하세요, 이 곳은 JH 작가님의 작품들을\n전시해 놓은 갤러리 입니다.\nJH님이 하경님과 만나면서\n간직한 사진들을 이 갤러리에 기증하셨어요.\n그러면 지금부터 작품들을 자유롭게 둘러보시고,\n감상을 충분히 하셨다면 저에게 말씀해 주세요.";
             this.showNpcDescription(introText, null, () => {
                 console.log('[NPC] First interaction complete');
                 this.registry.set('hasTalkedToGalleryNpc', true);
@@ -1408,12 +1431,12 @@ class GalleryScene extends Phaser.Scene {
         } else {
             if (!hasConfirmed) {
                 console.log('[NPC] Showing confirmation prompt');
-                const confirmText = "충분히 감상하셨나요?\n저에게 다시 말을 걸어주시면, 건물의 루프탑으로 안내하겠습니다.\nJH님이 기다리고 계세요.";
+                const confirmText = "충분히 감상하셨나요?\n그 다음 장소인 루프탑으로 안내를 도와드릴텐데,\n마음의 준비가 되시면 말씀해주세요.\n누군가가 기다리고 계신 것 같아요.";
                 this.showNpcDescription(confirmText, null, () => {
                     this.registry.set('awaitingConfirmation', true);
                 });
             } else {
-                const confirmTrueText = "그러면 건물의 루프탑 이동하시겠습니다.";
+                const confirmTrueText = "준비가 되신 것 같으니, 바로 루프탑으로 이동하시겠습니다.";
                 this.showNpcDescription(confirmTrueText, null, () => {
                     this.scene.start('RooftopScene');
                 });
@@ -1440,12 +1463,12 @@ class GalleryScene extends Phaser.Scene {
     showNpcDescription(text, imageKey, callback) {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
-            fontSize: '25px', 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
             color: '#fff', 
             align: 'center', 
-            // wordWrap: { width: 700 }
         }).setOrigin(0.5);
-
+        dialogText.setLineSpacing(10);
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
@@ -1454,7 +1477,7 @@ class GalleryScene extends Phaser.Scene {
         this.continueTyping = false;
 
         this.arrowIndicator = this.add.text(880, 1230, '▼', {
-            fontSize: '25px',
+            fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -1478,12 +1501,13 @@ class GalleryScene extends Phaser.Scene {
 
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
-            fontSize: '25px', 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
         }).setOrigin(0.5);
-
+        dialogText.setLineSpacing(10);
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
@@ -1493,7 +1517,7 @@ class GalleryScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(880, 1230, '▼', {
-            fontSize: '25px',
+            fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -1542,8 +1566,8 @@ class GalleryScene extends Phaser.Scene {
 
     typeText(text, targetText, scene, callback) {
         let currentIndex = 0;
-        let letEnterIdx = 0;
         let line_cnt = 1;
+        let is_skip = 0;
         const typingSpeed = 80;
 
         const typeNextChar = () => {
@@ -1588,9 +1612,10 @@ class GalleryScene extends Phaser.Scene {
                         scene.hideDescription(); // 대화창 닫기
                         return; // 루프 종료
                     } else {
-                        // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        if (text[currentIndex] === '\n') {
+                            currentIndex++;
+                        }
                         targetText.setText(''); // 텍스트 초기화
-                        letEnterIdx = 0;
                         line_cnt = 1;
                         scene.isWaitingForInput = false;
                         if (scene.arrowIndicatorBlinkEvent) {
@@ -1609,7 +1634,10 @@ class GalleryScene extends Phaser.Scene {
 
             // 2줄 초과 시 ▼ 표시
             if (line_cnt >= 3) {
-                console.log('Waiting for user input at index:', currentIndex);
+                if (is_skip === 0) {
+                    currentIndex +=1;
+                    is_skip = 1;
+                }
                 scene.isWaitingForInput = true;
                 scene.arrowIndicator.setVisible(true);
                 // ▼ 깜빡임 효과
@@ -1631,23 +1659,16 @@ class GalleryScene extends Phaser.Scene {
                 return;
             }
 
+
+
             // 다음 글자 출력
             targetText.setText(targetText.text + text[currentIndex]);
             currentIndex++;
-            letEnterIdx++;
 
             // 줄바꿈 처리
             if (text[currentIndex] === '\n') {
-                letEnterIdx = 0;
                 line_cnt++;
             }
-            // } else if (letEnterIdx == 35) {
-            //     letEnterIdx = 0;
-            //     line_cnt++;
-            //     if (line_cnt < 3) {
-            //         targetText.setText(targetText.text + '\n');
-            //     }
-            // }
 
             // 다음 글자 출력
             scene.time.delayedCall(typingSpeed, typeNextChar);
@@ -1806,10 +1827,10 @@ class RooftopScene extends Phaser.Scene {
         });
 
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
-        this.entryZone = this.add.zone(510, 400, 150, 50);
+        this.entryZone = this.add.zone(510, 1100, 150, 50);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
-            this.scene.start('ReceptionScene', { returnToEntrance: true });
+            this.scene.start('GalleryScene', { returnToEntrance: true });
         });
 
         // 초기 상태
@@ -1911,12 +1932,13 @@ class RooftopScene extends Phaser.Scene {
     showDescription(text, imageKey) {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
-            fontSize: '25px', 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
         }).setOrigin(0.5);
-
+        dialogText.setLineSpacing(10);
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
@@ -1926,7 +1948,7 @@ class RooftopScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(880, 1230, '▼', {
-            fontSize: '25px',
+            fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -1966,12 +1988,13 @@ class RooftopScene extends Phaser.Scene {
         const ticketMessage = '(갤러리 입장권을 획득했습니다.)';
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
-            fontSize: '25px', 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
         }).setOrigin(0.5);
-
+        dialogText.setLineSpacing(10);
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
@@ -1980,7 +2003,7 @@ class RooftopScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.ticketArrowIndicator = this.add.text(800, 1240, '▼', {
-            fontSize: '25px',
+            fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -2047,6 +2070,7 @@ class RooftopScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
+        let is_skip = 0;
         const typingSpeed = 80;
 
         const typeNextChar = () => {
@@ -2092,6 +2116,9 @@ class RooftopScene extends Phaser.Scene {
                         return; // 루프 종료
                     } else {
                         // 텍스트가 아직 남아있는 경우, 다음 텍스트로 진행
+                        if (text[currentIndex] === '\n') {
+                            currentIndex++;
+                        }
                         targetText.setText(''); // 텍스트 초기화
                         letEnterIdx = 0;
                         line_cnt = 1;
@@ -2111,8 +2138,11 @@ class RooftopScene extends Phaser.Scene {
             }
 
             // 2줄 초과 시 ▼ 표시
-            if (line_cnt >= 3) {
-                console.log('Waiting for user input at index:', currentIndex);
+            if (line_cnt === 3) {
+                if (is_skip === 0) {
+                    currentIndex +=1;
+                    is_skip = 1;
+                }
                 scene.isWaitingForInput = true;
                 scene.arrowIndicator.setVisible(true);
                 // ▼ 깜빡임 효과
@@ -2165,6 +2195,7 @@ class RooftopScene extends Phaser.Scene {
         let currentIndex = 0;
         let letEnterIdx = 0;
         let line_cnt = 1;
+        let is_skip = 0;
         const typingSpeed = 80;
 
         const typeNextChar = () => {
@@ -2193,8 +2224,11 @@ class RooftopScene extends Phaser.Scene {
             }
 
             // 2줄 초과 시 ▼ 표시 (입장권 메시지는 한 줄이므로 이 조건은 필요 없을 수 있음)
-            if (line_cnt >= 3) {
-                console.log('Waiting for user input at index:', currentIndex);
+            if (line_cnt === 3) {
+                if (is_skip === 0) {
+                    currentIndex +=1;
+                    is_skip = 1;
+                }
                 scene.isWaitingForTicketInput = true;
                 scene.ticketArrowIndicator.setVisible(true);
                 // ▼ 깜빡임 효과
@@ -2273,7 +2307,7 @@ const config = {
         default: 'arcade',
         arcade: {
              gravity: { y: 0 } ,
-             debug:false // debug option
+             debug:true // debug option
             }
     },
     scale: {
@@ -2284,7 +2318,7 @@ const config = {
         width: 1024,
         height: 1280
     },
-    scene: [EntranceScene, ReceptionScene,GalleryScene,RooftopScene],
+    scene: [GalleryScene,EntranceScene, ReceptionScene,RooftopScene],
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
         preBoot: (game) => {
             game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화

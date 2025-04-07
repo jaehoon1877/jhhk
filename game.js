@@ -1,4 +1,63 @@
 
+class LoadingScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'LoadingScene' });
+    }
+
+    preload() {
+        const { width, height } = this.cameras.main;
+
+        // 텍스트 스타일
+        const loadingText = this.add.text(width / 2, height / 2 - 50, '로딩 중...', {
+            fontSize: '32px',
+            color: '#ffffff',
+            fontFamily: 'Nanum Gothic'
+        }).setOrigin(0.5);
+
+        const percentText = this.add.text(width / 2, height / 2, '0%', {
+            fontSize: '24px',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        const progressBox = this.add.rectangle(width / 2, height / 2 + 40, 320, 50, 0x222222).setOrigin(0.5);
+        const progressBar = this.add.rectangle(width / 2 - 150, height / 2 + 40, 0, 30, 0xffffff).setOrigin(0, 0.5);
+
+        // 로딩 진행 표시
+        this.load.on('progress', (value) => {
+            progressBar.width = 300 * value;
+            percentText.setText(parseInt(value * 100) + '%');
+        });
+
+        // 로딩 완료
+        this.load.on('complete', () => {
+            this.scene.start('EntranceScene');
+        });
+
+        // 👉 여기에 모든 asset preload
+        this.load.image('entranceBg', 'assets/entrance.png');
+        this.load.image('galleryBg', 'assets/gallery.png');
+        this.load.image('receptionBg', 'assets/reception.png');
+        this.load.image('rooftopBg', 'assets/rooftop.png');
+        this.load.image('ticket', 'assets/ticket_concrete.png');
+
+        this.load.image('painting1', 'assets/painting1.png');
+        this.load.image('painting2', 'assets/painting2.png');
+        this.load.image('painting3', 'assets/painting3.png');
+        this.load.image('painting4', 'assets/painting4.png');
+        this.load.image('painting5', 'assets/painting5.png');
+        this.load.image('painting6', 'assets/painting6.png');
+        this.load.image('painting7', 'assets/painting7.png');
+        this.load.image('painting8', 'assets/painting8.png');
+        this.load.image('painting9', 'assets/painting9.png');
+        this.load.image('painting10', 'assets/painting10.png');
+
+        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
+        // this.load.audio('galleryBgm', 'assets/gallery_bgm.mp3');
+        this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
+    }
+}
+
+
 
 class EntranceScene extends Phaser.Scene {
     constructor() {
@@ -1827,7 +1886,7 @@ class RooftopScene extends Phaser.Scene {
         });
 
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
-        this.entryZone = this.add.zone(510, 1100, 150, 50);
+        this.entryZone = this.add.zone(510, 1260, 150, 50);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
             this.scene.start('GalleryScene', { returnToEntrance: true });
@@ -2307,7 +2366,7 @@ const config = {
         default: 'arcade',
         arcade: {
              gravity: { y: 0 } ,
-             debug:true // debug option
+             debug:false // debug option
             }
     },
     scale: {
@@ -2318,7 +2377,7 @@ const config = {
         width: 1024,
         height: 1280
     },
-    scene: [GalleryScene,EntranceScene, ReceptionScene,RooftopScene],
+    scene: [LoadingScene,GalleryScene,EntranceScene, ReceptionScene,RooftopScene],
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
         preBoot: (game) => {
             game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화

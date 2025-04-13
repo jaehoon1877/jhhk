@@ -75,13 +75,13 @@ class EntranceScene extends Phaser.Scene {
 
     }
 
-    preload() {
-        this.load.image('entranceBg', 'assets/entrance.png');
-        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
-        this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
-        // 입장권 이미지 로드
-        this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
-    }
+    // preload() {
+    //     this.load.image('entranceBg', 'assets/entrance.png');
+    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
+    //     this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
+    //     // 입장권 이미지 로드
+    //     this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
+    // }
 
     create() {
         this.add.image(512, 640, 'entranceBg');
@@ -337,7 +337,7 @@ class EntranceScene extends Phaser.Scene {
         this.continueTyping = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+        this.arrowIndicator = this.add.text(950, 1230, '▼', {
             fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
@@ -390,7 +390,7 @@ class EntranceScene extends Phaser.Scene {
         this.isWaitingForTicketInput = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.ticketArrowIndicator = this.add.text(800, 1240, '▼', {
+        this.ticketArrowIndicator = this.add.text(950, 1240, '▼', {
             fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
@@ -708,11 +708,11 @@ class ReceptionScene extends Phaser.Scene {
 
     }
 
-    preload() {
-        this.load.image('receptionBg', 'assets/reception.png');
-        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
-        // this.load.audio('receptionBgm', 'assets/entrance_bgm.mp3');
-    }
+    // preload() {
+    //     this.load.image('receptionBg', 'assets/reception.png');
+    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
+    //     // this.load.audio('receptionBgm', 'assets/entrance_bgm.mp3');
+    // }
 
     create() {
         this.add.image(512, 640, 'receptionBg');
@@ -947,7 +947,7 @@ class ReceptionScene extends Phaser.Scene {
         this.isWaitingForInput = false;
         this.continueTyping = false;
 
-        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+        this.arrowIndicator = this.add.text(950, 1230, '▼', {
             fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
@@ -1152,18 +1152,18 @@ class GalleryScene extends Phaser.Scene {
     
     }
 
-    preload() {
-        this.load.image('galleryBg', 'assets/gallery.png');
-        this.load.image('painting1', 'assets/painting8.png');
-        this.load.image('painting2', 'assets/painting2.png');
-        this.load.image('painting3', 'assets/painting9.png');
-        this.load.image('painting4', 'assets/painting10.png');
-        this.load.image('painting5', 'assets/painting5.png');
-        this.load.image('painting6', 'assets/painting6.png');
-        this.load.image('painting7', 'assets/painting7.png');
-        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.audio('galleryBgm', 'assets/gallery_bgm.mp3');
-    }
+    // preload() {
+    //     this.load.image('galleryBg', 'assets/gallery.png');
+    //     this.load.image('painting1', 'assets/painting8.png');
+    //     this.load.image('painting2', 'assets/painting2.png');
+    //     this.load.image('painting3', 'assets/painting9.png');
+    //     this.load.image('painting4', 'assets/painting10.png');
+    //     this.load.image('painting5', 'assets/painting5.png');
+    //     this.load.image('painting6', 'assets/painting6.png');
+    //     this.load.image('painting7', 'assets/painting7.png');
+    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 32, frameHeight: 48 });
+    //     this.load.audio('galleryBgm', 'assets/gallery_bgm.mp3');
+    // }
 
     create() {
         this.add.image(512, 640, 'galleryBg');
@@ -1535,7 +1535,7 @@ class GalleryScene extends Phaser.Scene {
         this.isWaitingForInput = false;
         this.continueTyping = false;
 
-        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+        this.arrowIndicator = this.add.text(950, 1230, '▼', {
             fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
@@ -1575,7 +1575,7 @@ class GalleryScene extends Phaser.Scene {
         this.continueTyping = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+        this.arrowIndicator = this.add.text(950, 1230, '▼', {
             fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
@@ -1752,17 +1752,17 @@ class RooftopScene extends Phaser.Scene {
 
     init(data) {
         this.playerStartX = 512;
-        this.playerStartY = 1200;
+        this.playerStartY = 1150;
 
     }
 
-    preload() {
-        this.load.image('rooftopBg', 'assets/rooftop.png');
-        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
-        // this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
-        // 입장권 이미지 로드
-        // this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
-    }
+    // preload() {
+    //     this.load.image('rooftopBg', 'assets/rooftop.png');
+    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
+    //     // this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
+    //     // 입장권 이미지 로드
+    //     // this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
+    // }
 
     create() {
         this.add.image(512, 640, 'rooftopBg');
@@ -1886,7 +1886,7 @@ class RooftopScene extends Phaser.Scene {
         });
 
         // 갤러리 입구 Zone (ReceptionScene으로 이동)
-        this.entryZone = this.add.zone(510, 1260, 150, 50);
+        this.entryZone = this.add.zone(510, 1280, 150, 30);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
             this.scene.start('GalleryScene', { returnToEntrance: true });
@@ -2006,7 +2006,7 @@ class RooftopScene extends Phaser.Scene {
         this.continueTyping = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.arrowIndicator = this.add.text(880, 1230, '▼', {
+        this.arrowIndicator = this.add.text(950, 1230, '▼', {
             fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
@@ -2061,7 +2061,7 @@ class RooftopScene extends Phaser.Scene {
         this.isWaitingForTicketInput = false;
 
         // ▼ 표시를 위한 텍스트 객체
-        this.ticketArrowIndicator = this.add.text(800, 1240, '▼', {
+        this.ticketArrowIndicator = this.add.text(950, 1240, '▼', {
             fontSize: '30px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);

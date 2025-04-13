@@ -30,7 +30,10 @@ class LoadingScene extends Phaser.Scene {
 
         // 로딩 완료
         this.load.on('complete', () => {
+            this.cameras.main.fadeOut(100, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
+            this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.start('EntranceScene');
+        });
         });
 
         // 👉 여기에 모든 asset preload
@@ -39,6 +42,8 @@ class LoadingScene extends Phaser.Scene {
         this.load.image('receptionBg', 'assets/reception.png');
         this.load.image('rooftopBg', 'assets/rooftop.png');
         this.load.image('ticket', 'assets/ticket_concrete.png');
+        this.load.image('envelope', 'assets/envelope.png');
+        this.load.image('letter', 'assets/letter.png');
 
         this.load.image('painting1', 'assets/painting1.png');
         this.load.image('painting2', 'assets/painting2.png');
@@ -75,15 +80,11 @@ class EntranceScene extends Phaser.Scene {
 
     }
 
-    // preload() {
-    //     this.load.image('entranceBg', 'assets/entrance.png');
-    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
-    //     this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
-    //     // 입장권 이미지 로드
-    //     this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
-    // }
 
     create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
+        this.isTransitioning = false; // 전환 상태 초기화
+        this.transitionStarted=false;
         this.add.image(512, 640, 'entranceBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -220,7 +221,17 @@ class EntranceScene extends Phaser.Scene {
         this.entryZone = this.add.zone(510, 400, 150, 50);
         this.physics.add.existing(this.entryZone);
         this.physics.add.overlap(this.player, this.entryZone, () => {
-            this.scene.start('ReceptionScene', { returnToEntrance: true });
+            if (this.transitionStarted) return; // 이미 페이드 시작했으면 무시
+
+            console.log("Start fadeOut");
+            this.transitionStarted = true;     // 플래그 설정
+            this.isTransitioning = true;
+                this.cameras.main.fadeOut(500, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
+
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    
+                this.scene.start('ReceptionScene', { returnToEntrance: true });
+            });
         });
 
         // 초기 상태
@@ -234,6 +245,12 @@ class EntranceScene extends Phaser.Scene {
         const speed = 400;
         let velocityX = 0;
         let velocityY = 0;
+        if (this.isTransitioning) {
+            // 전환 중에는 플레이어 이동 비활성화
+            this.player.setVelocity(0);
+            this.player.anims.stop();
+            return;
+        }
 
         if (!this.isInteracting && !this.isShowingTicket) {
             // 키보드 입력 처리
@@ -364,6 +381,8 @@ class EntranceScene extends Phaser.Scene {
         // 입장권 이미지 표시
         this.ticketImage = this.add.image(512, 524, 'ticket').setDepth(12);
         this.ticketImage.setDisplaySize(600, 600); // 입장권 이미지 크기 조정 (필요에 따라 수정)
+        this.ticketImage.setAlpha(0);
+        this.ticketImage.setVisible(true);
         this.tweens.add({
             targets: this.ticketImage,
             alpha: 1,
@@ -708,13 +727,11 @@ class ReceptionScene extends Phaser.Scene {
 
     }
 
-    // preload() {
-    //     this.load.image('receptionBg', 'assets/reception.png');
-    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
-    //     // this.load.audio('receptionBgm', 'assets/entrance_bgm.mp3');
-    // }
 
     create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
+        this.isTransitioning = false; // 전환 상태 초기화
+        this.transitionStarted=false;
         this.add.image(512, 640, 'receptionBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -845,6 +862,12 @@ class ReceptionScene extends Phaser.Scene {
         const speed = 400;
         let velocityX = 0;
         let velocityY = 0;
+
+          if (this.isTransitioning) {
+            this.player.setVelocity(0);
+            this.player.anims.stop();
+            return;
+          }
 
         if (!this.isInteracting) {
             // 키보드 입력 처리
@@ -1112,7 +1135,16 @@ class ReceptionScene extends Phaser.Scene {
                 // 입장권이 있으면 기존 대화 이어가기
                 const dialogText = '(입장권을 전달했습니다.)\n\n티켓을 가지고 계시네요!\n현재 입장 가능하세요. 갤러리로 이동시켜 드리겠습니다.\n즐거운 관람 되세요 ^^';
                 this.showDescription(dialogText, null, () => {
+                    if (this.transitionStarted) return; // 이미 페이드 시작했으면 무시
+
+                    console.log("Start fadeOut");
+                    this.transitionStarted = true;     // 플래그 설정
+                    this.isTransitioning = true;
+                    this.cameras.main.fadeOut(500, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        console.log("FadeOut complete");
                     this.scene.start('GalleryScene', { returnToReception: true });
+                    });
                 });
             } else {
                 // 입장권이 없으면 대화 종료
@@ -1152,20 +1184,11 @@ class GalleryScene extends Phaser.Scene {
     
     }
 
-    // preload() {
-    //     this.load.image('galleryBg', 'assets/gallery.png');
-    //     this.load.image('painting1', 'assets/painting8.png');
-    //     this.load.image('painting2', 'assets/painting2.png');
-    //     this.load.image('painting3', 'assets/painting9.png');
-    //     this.load.image('painting4', 'assets/painting10.png');
-    //     this.load.image('painting5', 'assets/painting5.png');
-    //     this.load.image('painting6', 'assets/painting6.png');
-    //     this.load.image('painting7', 'assets/painting7.png');
-    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 32, frameHeight: 48 });
-    //     this.load.audio('galleryBgm', 'assets/gallery_bgm.mp3');
-    // }
 
     create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
+        this.isTransitioning = false; // 전환 상태 초기화
+        this.transitionStarted=false;
         this.add.image(512, 640, 'galleryBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -1324,7 +1347,8 @@ class GalleryScene extends Phaser.Scene {
         
 
         // 출구 Zone
-        this.exitZone = this.add.zone(512, 1280, 300, 20);
+        // this.exitZone = this.add.zone(512, 1280, 300, 20);
+        this.exitZone = this.add.zone(0, 0, 0, 0);
         this.physics.add.existing(this.exitZone);
         this.physics.add.overlap(this.player, this.exitZone, () => {
             this.player.setVelocity(0);
@@ -1390,6 +1414,12 @@ class GalleryScene extends Phaser.Scene {
         const speed = 400;
         let velocityX = 0;
         let velocityY = 0;
+        
+        if (this.isTransitioning) {
+            this.player.setVelocity(0);
+            this.player.anims.stop();
+            return;
+          }
 
         if (!this.isInteracting) {
             // 키보드 입력 처리
@@ -1497,7 +1527,15 @@ class GalleryScene extends Phaser.Scene {
             } else {
                 const confirmTrueText = "준비가 되신 것 같으니, 바로 루프탑으로 이동하시겠습니다.";
                 this.showNpcDescription(confirmTrueText, null, () => {
-                    this.scene.start('RooftopScene');
+                    if (this.transitionStarted) return; // 이미 페이드 시작했으면 무시
+
+                    console.log("Start fadeOut");
+                    this.transitionStarted = true;     // 플래그 설정
+                    this.isTransitioning = true;
+                    this.cameras.main.fadeOut(500, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scee.start('RooftopScene');
+                    });
                 });
             }
         }
@@ -1756,15 +1794,11 @@ class RooftopScene extends Phaser.Scene {
 
     }
 
-    // preload() {
-    //     this.load.image('rooftopBg', 'assets/rooftop.png');
-    //     this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
-    //     // this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
-    //     // 입장권 이미지 로드
-    //     // this.load.image('ticket', 'assets/ticket_concrete.png'); // 입장권 이미지 파일 경로
-    // }
 
     create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
+        this.isTransitioning = false; // 전환 상태 초기화
+        this.transitionStarted=false;
         this.add.image(512, 640, 'rooftopBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -1904,6 +1938,12 @@ class RooftopScene extends Phaser.Scene {
         let velocityX = 0;
         let velocityY = 0;
 
+        if (this.isTransitioning) {
+            this.player.setVelocity(0);
+            this.player.anims.stop();
+            return;
+          }
+
         if (!this.isInteracting && !this.isShowingTicket) {
             // 키보드 입력 처리
             let hasKeyboardInput = false;
@@ -2011,18 +2051,18 @@ class RooftopScene extends Phaser.Scene {
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
-        const callback = () => {
-        };
-        // // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
         // const callback = () => {
-        //     if (this.registry.get('hasReceivedTicket')==false) {
-        //         console.log('First NPC conversation finished, preparing to show ticket.');
-        //         // 대화창이 완전히 사라진 후 입장권 표시
-        //         this.time.delayedCall(500, () => {
-        //             this.showTicketAndMessage();
-        //         });
-        //     }
         // };
+        // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
+        const callback = () => {
+            if (this.registry.get('hasReceivedTicket')==false) {
+                console.log('First NPC conversation finished, preparing to show ticket.');
+                // 대화창이 완전히 사라진 후 입장권 표시
+                this.time.delayedCall(500, () => {
+                    this.showTicketAndMessage();
+                });
+            }
+        };
 
         this.typeText(text, dialogText, this, callback);
 
@@ -2030,13 +2070,16 @@ class RooftopScene extends Phaser.Scene {
         this.dialogText = dialogText;
     }
 
-    // 입장권 이미지와 "갤러리 입장권을 획득했습니다." 메시지 표시
+
+
     showTicketAndMessage() {
         // 입장권 이미지 표시
-        this.ticketImage = this.add.image(512, 524, 'ticket').setDepth(12);
-        this.ticketImage.setDisplaySize(600, 600); // 입장권 이미지 크기 조정 (필요에 따라 수정)
+        this.envelopeImage = this.add.image(512, 524, 'envelope').setDepth(12);
+        this.envelopeImage.setDisplaySize(600, 600); // 입장권 이미지 크기 조정 (필요에 따라 수정)
+        this.envelopeImage.setAlpha(0);
+        this.envelopeImage.setVisible(true);
         this.tweens.add({
-            targets: this.ticketImage,
+            targets: this.envelopeImage,
             alpha: 1,
             duration: 500,
             ease: 'Linear'
@@ -2044,7 +2087,7 @@ class RooftopScene extends Phaser.Scene {
         console.log('Ticket image displayed at (400, 300).');
 
         // 입장권 획득 메시지 표시
-        const ticketMessage = '(갤러리 입장권을 획득했습니다.)';
+        const envelopeMessage = '(편지를 전달받았았습니다.)';
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
@@ -2066,19 +2109,17 @@ class RooftopScene extends Phaser.Scene {
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
-        
+        this.typeTicketText(envelopeMessage, dialogText, this);
 
-        this.typeTicketText(ticketMessage, dialogText, this);
-
-        this.ticketDialogBox = dialogBox;
-        this.ticketDialogText = dialogText;
+        this.envelopeDialogBox = dialogBox;
+        this.envelopeDialogText = dialogText;
     }
 
     // 입장권 메시지 숨김 메서드
     hideTicketAndMessage() {
-        if (this.ticketDialogBox && this.ticketDialogText) {
-            this.ticketDialogBox.destroy();
-            this.ticketDialogText.destroy();
+        if (this.envelopeDialogBox && this.envelopeDialogText) {
+            this.envelopeDialogBox.destroy();
+            this.envelopeDialogText.destroy();
         }
         if (this.ticketArrowIndicator) {
             if (this.ticketArrowIndicatorBlinkEvent) {
@@ -2086,21 +2127,27 @@ class RooftopScene extends Phaser.Scene {
             }
             this.ticketArrowIndicator.destroy();
         }
-        if (this.ticketImage) {
-            this.ticketImage.destroy();
+        if (this.envelopeImage) {
+            this.envelopeImage.destroy();
             console.log('Ticket image removed.');
         }
-        this.ticketDialogBox = null;
-        this.ticketDialogText = null;
+        this.envelopeDialogBox = null;
+        this.envelopeDialogText = null;
         this.ticketArrowIndicator = null;
         this.ticketArrowIndicatorBlinkEvent = null;
-        this.ticketImage = null;
+        this.envelopeImage = null;
         this.isShowingTicket = false;
         this.isWaitingForTicketInput = false;
+        
+        this.cameras.main.fadeOut(100, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.showFullLetter();
+    });
+        
 
-        // 전역 상태 업데이트
-        this.registry.set('hasReceivedTicket', true);
-        console.log('hasReceivedTicket set to true in registry.');
+        // // 전역 상태 업데이트
+        // this.registry.set('hasReceivedTicket', true);
+        // console.log('hasReceivedTicket set to true in registry.');
     }
 
     // 대화창 숨김 메서드
@@ -2123,6 +2170,25 @@ class RooftopScene extends Phaser.Scene {
         this.isWaitingForInput = false;
         this.continueTyping = false;
     }
+
+    showFullLetter() {
+        // 전체화면 편지 이미지 추가
+        this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
+        this.fullLetterImage = this.add.image(512, 640, 'letter').setDepth(20);
+        this.fullLetterImage.setDisplaySize(1024, 1280);
+        this.fullLetterImage.setInteractive();
+    
+        // 클릭 시 사라지게
+        this.fullLetterImage.once('pointerdown', () => {
+            this.fullLetterImage.destroy();
+            this.fullLetterImage = null;
+    
+            // 티켓 획득 처리
+            this.registry.set('hasReceivedTicket', true);
+            console.log('hasReceivedTicket set to true in registry.');
+        });
+    }
+    
 
     // 텍스트 타이핑 메서드 (대화창용)
     typeText(text, targetText, scene, callback) {
@@ -2319,13 +2385,6 @@ class RooftopScene extends Phaser.Scene {
                 letEnterIdx = 0;
                 line_cnt++;
             }
-            // } else if (letEnterIdx == 35) {
-            //     letEnterIdx = 0;
-            //     line_cnt++;
-            //     if (line_cnt < 3) {
-            //         targetText.setText(targetText.text + '\n');
-            //     }
-            // }
 
             // 다음 글자 출력
             scene.time.delayedCall(typingSpeed, typeNextChar);
@@ -2339,7 +2398,7 @@ class RooftopScene extends Phaser.Scene {
     handleNpcInteraction() {
         this.isInteracting = true;
         let dialogText;
-        dialogText = '안녕 하경아! 그림들 구경 잘 했어??\n\n 오늘 우리 400일 이더라! 완전 뜻깊은 날이지!ㅎㅎ\n 항상 사랑해♥';
+        dialogText = '안녕 하경아! 그림들 구경 잘 했어??\n\n 오늘 우리 400일 이더라! 완전 뜻깊은 날이지!ㅎㅎ\n 편지를 좀 준비했는데, 읽어줄래??';
         this.showDescription(dialogText, null);
     }
 

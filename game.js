@@ -169,16 +169,16 @@ class EntranceScene extends Phaser.Scene {
                 console.log('Touch: Closing ticket message');
                 this.isWaitingForTicketInput = false;
                 this.hideTicketAndMessage();
-            } else if (!this.isInteracting && !this.isShowingTicket) {
+            } else if (!this.isInteracting) {
                 if (this.physics.world.overlap(this.player, this.npcZone) &&
                     Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
                     this.handleNpcInteraction();
                 } else if (this.physics.world.overlap(this.player, this.tigerZone1) &&
-                Phaser.Geom.Rectangle.ContainsPoint(this.tigerZone1.getBounds(), { x: pointer.x, y: pointer.y })) {
-                this.handleTiger1Interaction();
+                    Phaser.Geom.Rectangle.ContainsPoint(this.tigerZone1.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handleTiger1Interaction();
                 } else if (this.physics.world.overlap(this.player, this.tigerZone2) &&
-                Phaser.Geom.Rectangle.ContainsPoint(this.tigerZone2.getBounds(), { x: pointer.x, y: pointer.y })) {
-                this.handleTiger2Interaction();           
+                    Phaser.Geom.Rectangle.ContainsPoint(this.tigerZone2.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handleTiger2Interaction();           
                 } else {
                     this.targetPosition.x = pointer.x;
                     this.targetPosition.y = pointer.y;
@@ -447,6 +447,7 @@ class EntranceScene extends Phaser.Scene {
 
     // 입장권 이미지와 "갤러리 입장권을 획득했습니다." 메시지 표시
     showTicketAndMessage() {
+        this.isInteracting = true;
         // 입장권 이미지 표시
         this.ticketImage = this.add.image(512, 524, 'ticket').setDepth(12);
         this.ticketImage.setDisplaySize(600, 600); // 입장권 이미지 크기 조정 (필요에 따라 수정)
@@ -518,6 +519,7 @@ class EntranceScene extends Phaser.Scene {
         // 전역 상태 업데이트
         this.registry.set('hasReceivedTicket', true);
         console.log('hasReceivedTicket set to true in registry.');
+        this.isInteracting = false;
     }
 
     // 대화창 숨김 메서드

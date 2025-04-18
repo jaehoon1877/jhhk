@@ -32,7 +32,7 @@ class LoadingScene extends Phaser.Scene {
         this.load.on('complete', () => {
             this.cameras.main.fadeOut(100, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
             this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('EntranceScene');
+            this.scene.start('EntranceScene', { returnToEntrance: false });
         });
         });
 
@@ -85,6 +85,7 @@ class EntranceScene extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
         this.isTransitioning = false; // 전환 상태 초기화
         this.transitionStarted=false;
+        this.collisionCount = 0;
         this.add.image(512, 640, 'entranceBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -137,6 +138,20 @@ class EntranceScene extends Phaser.Scene {
         this.npc.setImmovable(true);
         this.npc.setFrame(59); // NPC 스프라이트 프레임
 
+        // 호랑이 동상1 상호작용
+        this.tigerZone1 = this.add.zone(280, 600, 150, 160);
+        this.physics.add.existing(this.tigerZone1);
+        this.physics.add.overlap(this.player, this.tigerZone1, () => {
+            // 상호작용 프롬프트 표시 (필요 시 추가 가능)
+        }, null, this);
+
+        // 호랑이 동상2 상호작용
+        this.tigerZone2 = this.add.zone(740, 600, 150, 160);
+        this.physics.add.existing(this.tigerZone2);
+        this.physics.add.overlap(this.player, this.tigerZone2, () => {
+            // 상호작용 프롬프트 표시 (필요 시 추가 가능)
+        }, null, this);
+
         // NPC 상호작용 Zone
         this.npcZone = this.add.zone(512, 1010, 80, 80);
         this.physics.add.existing(this.npcZone);
@@ -158,6 +173,12 @@ class EntranceScene extends Phaser.Scene {
                 if (this.physics.world.overlap(this.player, this.npcZone) &&
                     Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
                     this.handleNpcInteraction();
+                } else if (this.physics.world.overlap(this.player, this.tigerZone1) &&
+                Phaser.Geom.Rectangle.ContainsPoint(this.tigerZone1.getBounds(), { x: pointer.x, y: pointer.y })) {
+                this.handleTiger1Interaction();
+                } else if (this.physics.world.overlap(this.player, this.tigerZone2) &&
+                Phaser.Geom.Rectangle.ContainsPoint(this.tigerZone2.getBounds(), { x: pointer.x, y: pointer.y })) {
+                this.handleTiger2Interaction();           
                 } else {
                     this.targetPosition.x = pointer.x;
                     this.targetPosition.y = pointer.y;
@@ -177,11 +198,16 @@ class EntranceScene extends Phaser.Scene {
                 console.log('Space: Closing ticket message');
                 this.isWaitingForTicketInput = false;
                 this.hideTicketAndMessage();
-            } else if (!this.isInteracting && !this.isShowingTicket) {
+            } else if (!this.isInteracting) {
                 if (this.physics.world.overlap(this.player, this.npcZone)) {
                     this.handleNpcInteraction();
+                } else if (this.physics.world.overlap(this.player, this.tigerZone1)) {
+                    this.handleTiger1Interaction();
+                } else if (this.physics.world.overlap(this.player, this.tigerZone2)) {
+                    this.handleTiger2Interaction();
                 }
             }
+                
         });
 
         // 벽 설정
@@ -191,28 +217,37 @@ class EntranceScene extends Phaser.Scene {
             this.physics.add.staticBody(360, 420, 70, 70),
             this.physics.add.staticBody(590, 420, 70, 70),
 
-            this.physics.add.staticBody(335, 480, 20, 200),
-            this.physics.add.staticBody(665, 480, 20, 200),
+            this.physics.add.staticBody(335, 440, 20, 190),
+            this.physics.add.staticBody(665, 440, 20, 190),
 
-            this.physics.add.staticBody(0, 650, 330, 30),
-            this.physics.add.staticBody(690, 650, 330, 30),
+            this.physics.add.staticBody(145, 600, 210, 30),
+            this.physics.add.staticBody(665, 600, 210, 30),
 
-            this.physics.add.staticBody(0, 650, 150, 385),
-            this.physics.add.staticBody(870, 650, 150, 385),
+            this.physics.add.staticBody(0, 600, 150, 425),
+            this.physics.add.staticBody(870, 600, 150, 425),
 
-            this.physics.add.staticBody(0, 1020, 320, 385),
-            this.physics.add.staticBody(700,1020, 320, 385),
+            this.physics.add.staticBody(0, 1020, 320, 425),
+            this.physics.add.staticBody(700,1020, 320, 425),
 
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 if (this.isTouchInputActive) {
-                    // 🔁 이동 방향 전환
-                    this.isMovingX = !this.isMovingX;
-        
-                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
-                    this.player.setVelocity(0);
-                    this.player.anims.stop();
+                    this.collisionCount += 1;
+            
+                    if (this.collisionCount >= 3) {
+                        // 3번 이상 충돌 시 이동 중지
+                        this.isTouchInputActive = false;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                        this.collisionCount = 0; // 충돌 카운트 초기화
+                        console.log('⚠️ 터치 이동 중 충돌 3회 → 이동 중지됨');
+                    } else {
+                        // 방향 전환
+                        this.isMovingX = !this.isMovingX;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                    }
                 }
             });
         });
@@ -333,6 +368,40 @@ class EntranceScene extends Phaser.Scene {
         }
 
         this.player.setVelocity(velocityX, velocityY);
+    }
+
+    // 대화창 표시 메서드
+    NormalShowDescription(text, imageKey) {
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
+            color: '#fff', 
+            align: 'center', 
+            // wordWrap: { width: 700 }
+        }).setOrigin(0.5);
+        dialogText.setLineSpacing(10);
+        dialogBox.setDepth(10);
+        dialogText.setDepth(11);
+
+        this.isInteracting = true;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.arrowIndicator = this.add.text(950, 1230, '▼', {
+            fontSize: '30px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+        const callback = () => {
+            this.time.delayedCall(500, () => {});
+        };
+
+        this.typeText(text, dialogText, this, callback);
+
+        this.dialogBox = dialogBox;
+        this.dialogText = dialogText;
     }
 
     // 대화창 표시 메서드
@@ -696,6 +765,20 @@ class EntranceScene extends Phaser.Scene {
         }
         this.showDescription(dialogText, null);
     }
+    // NPC 상호작용 처리 메서드
+    handleTiger1Interaction() {
+        this.isInteracting = true;
+        let dialogText;
+        dialogText = '어흥!!!';
+        this.NormalShowDescription(dialogText, null);
+    }
+    handleTiger2Interaction() {
+        this.isInteracting = true;
+        let dialogText;
+        dialogText = '야옹!!!';
+        this.NormalShowDescription(dialogText, null);
+    }
+
 
     shutdown() {
         if (this.entranceBgm) {
@@ -732,6 +815,7 @@ class ReceptionScene extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
         this.isTransitioning = false; // 전환 상태 초기화
         this.transitionStarted=false;
+        this.collisionCount = 0;
         this.add.image(512, 640, 'receptionBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -786,22 +870,32 @@ class ReceptionScene extends Phaser.Scene {
 
         // 이동 불가능 영역 (벽면) 설정
         this.walls = [
+            this.physics.add.staticBody(0, 0, 1210, 200),
             this.physics.add.staticBody(0, 1210, 360, 70),
             this.physics.add.staticBody(664, 1210, 360, 70),
             this.physics.add.staticBody(0, 0, 150, 1280),
             this.physics.add.staticBody(874, 0, 150, 1280),
-            this.physics.add.staticBody(0, 0, 1024, 400),
+            this.physics.add.staticBody(315, 0, 410, 400),
 
         ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 if (this.isTouchInputActive) {
-                    // 🔁 이동 방향 전환
-                    this.isMovingX = !this.isMovingX;
-        
-                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
-                    this.player.setVelocity(0);
-                    this.player.anims.stop();
+                    this.collisionCount += 1;
+            
+                    if (this.collisionCount >= 3) {
+                        // 3번 이상 충돌 시 이동 중지
+                        this.isTouchInputActive = false;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                        this.collisionCount = 0; // 충돌 카운트 초기화
+                        console.log('⚠️ 터치 이동 중 충돌 3회 → 이동 중지됨');
+                    } else {
+                        // 방향 전환
+                        this.isMovingX = !this.isMovingX;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                    }
                 }
             });
         });
@@ -823,7 +917,13 @@ class ReceptionScene extends Phaser.Scene {
                 if (this.physics.world.overlap(this.player, this.npcZone) &&
                     Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
                     this.handleNpcInteraction();
-                } else {
+                } else if (this.physics.world.overlap(this.player,this.painting1Zone) &&
+                    Phaser.Geom.Rectangle.ContainsPoint(this.painting1Zone.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handlePaintingInteraction();
+                } else if (this.physics.world.overlap(this.player, this.painting2Zone) &&
+                    Phaser.Geom.Rectangle.ContainsPoint(this.painting2Zone.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handlePaintingInteraction();
+                } else {    
                     this.targetPosition.x = pointer.x;
                     this.targetPosition.y = pointer.y;
                     this.isMovingX = true;
@@ -839,6 +939,18 @@ class ReceptionScene extends Phaser.Scene {
             // this.showInteractionPrompt();
         }, null, this);
 
+        // NPC 상호작용 Zone
+        this.painting1Zone = this.add.zone(240, 200, 100, 200);
+        this.physics.add.existing(this.painting1Zone);
+        this.physics.add.overlap(this.player, this.painting1Zone, () => {
+            // this.showInteractionPrompt();
+        }, null, this);
+        this.painting2Zone = this.add.zone(785, 200, 100, 200);
+        this.physics.add.existing(this.painting2Zone);
+        this.physics.add.overlap(this.player, this.painting2Zone, () => {
+            // this.showInteractionPrompt();
+        }, null, this);
+
         // Spacebar 입력 설정
         this.input.keyboard.on('keydown-SPACE', () => {
             if (this.isInteracting && this.isWaitingForInput) {
@@ -848,6 +960,10 @@ class ReceptionScene extends Phaser.Scene {
             } else if (!this.isInteracting) {
                 if (this.physics.world.overlap(this.player, this.npcZone)) {
                     this.handleNpcInteraction();
+                }else if (this.physics.world.overlap(this.player, this.painting1Zone)) {
+                    this.handlePaintingInteraction();
+                }else if (this.physics.world.overlap(this.player, this.painting2Zone)) {
+                    this.handlePaintingInteraction();
                 }
             }
         });
@@ -1154,6 +1270,13 @@ class ReceptionScene extends Phaser.Scene {
             }
         });
     }
+    handlePaintingInteraction() {
+        this.isInteracting = true;
+        this.showDescription('전혀 모르는 작품이다..ㅠㅠㅠ', null, () => {
+            this.hideDescription();
+        });
+    }
+
 
     shutdown() {
         if (this.receptionBgm) {
@@ -1189,6 +1312,7 @@ class GalleryScene extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
         this.isTransitioning = false; // 전환 상태 초기화
         this.transitionStarted=false;
+        this.collisionCount = 0;
         this.add.image(512, 640, 'galleryBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -1302,26 +1426,27 @@ class GalleryScene extends Phaser.Scene {
 
             this.physics.add.staticBody(20, 1170, 70, 70), // NPC
 
-            this.physics.add.staticBody(0, 1250, 360, 50),
-            this.physics.add.staticBody(660, 1250, 350, 50),
+            this.physics.add.staticBody(0, 1270, 1170, 10),
+            // this.physics.add.staticBody(0, 1250, 360, 50),
+            // this.physics.add.staticBody(660, 1250, 350, 50),
 
-            this.physics.add.staticBody(0, 965, 280, 50),
-            this.physics.add.staticBody(735, 965, 300, 50),   
+            this.physics.add.staticBody(0, 965, 280, 70),
+            this.physics.add.staticBody(735, 965, 300, 70),   
 
-            this.physics.add.staticBody(280, 820, 50, 195),
-            this.physics.add.staticBody(685, 820, 50, 195),
+            this.physics.add.staticBody(280, 820, 50, 215),
+            this.physics.add.staticBody(685, 820, 50, 215),
 
             this.physics.add.staticBody(0, 820, 280, 50),
             this.physics.add.staticBody(735, 820, 290, 50),           
 
-            this.physics.add.staticBody(295, 455, 50, 185),
-            this.physics.add.staticBody(675, 455, 50, 185),
+            this.physics.add.staticBody(295, 455, 50, 205),
+            this.physics.add.staticBody(675, 455, 50, 205),
 
-            this.physics.add.staticBody(0, 600, 295, 40),
-            this.physics.add.staticBody(725, 600, 300, 40), 
+            this.physics.add.staticBody(0, 600, 295, 60),
+            this.physics.add.staticBody(725, 600, 300, 60), 
 
-            this.physics.add.staticBody(0, 455, 295, 50),
-            this.physics.add.staticBody(725, 455, 300, 50), 
+            this.physics.add.staticBody(0, 455, 295, 70),
+            this.physics.add.staticBody(725, 455, 300, 70), 
 
             this.physics.add.staticBody(0, 240, 1025, 50),
 
@@ -1330,16 +1455,24 @@ class GalleryScene extends Phaser.Scene {
 
         ];
 
-
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 if (this.isTouchInputActive) {
-                    // 🔁 이동 방향 전환
-                    this.isMovingX = !this.isMovingX;
-        
-                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
-                    this.player.setVelocity(0);
-                    this.player.anims.stop();
+                    this.collisionCount += 1;
+            
+                    if (this.collisionCount >= 3) {
+                        // 3번 이상 충돌 시 이동 중지
+                        this.isTouchInputActive = false;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                        this.collisionCount = 0; // 충돌 카운트 초기화
+                        console.log('⚠️ 터치 이동 중 충돌 3회 → 이동 중지됨');
+                    } else {
+                        // 방향 전환
+                        this.isMovingX = !this.isMovingX;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                    }
                 }
             });
         });
@@ -1348,13 +1481,13 @@ class GalleryScene extends Phaser.Scene {
 
         // 출구 Zone
         // this.exitZone = this.add.zone(512, 1280, 300, 20);
-        this.exitZone = this.add.zone(0, 0, 0, 0);
-        this.physics.add.existing(this.exitZone);
-        this.physics.add.overlap(this.player, this.exitZone, () => {
-            this.player.setVelocity(0);
-            this.player.anims.stop();
-            this.scene.start('ReceptionScene', { returnToEntrance: true });
-        });
+        // this.exitZone = this.add.zone(0, 0, 0, 0);
+        // this.physics.add.existing(this.exitZone);
+        // this.physics.add.overlap(this.player, this.exitZone, () => {
+        //     this.player.setVelocity(0);
+        //     this.player.anims.stop();
+        //     this.scene.start('ReceptionScene', { returnToEntrance: true });
+        // });
 
         // Spacebar 입력 설정
         this.input.keyboard.on('keydown-SPACE', () => {
@@ -1382,18 +1515,19 @@ class GalleryScene extends Phaser.Scene {
 
         // 그림 설정
         const paintings = [
-            { x: 155, y: 235, x_zone: 210, y_zone: 150, key: 'painting1', desc: 'asd', imageKey: 'painting1' },
-            { x: 512, y: 235, x_zone: 260, y_zone: 150, key: 'painting2', desc: 'An abstract art piece.', imageKey: 'painting2' },
-            { x: 865, y: 235, x_zone: 210, y_zone: 150, key: 'painting3', desc: 'A starry night scene.', imageKey: 'painting3' },
-            { x: 150, y: 605, x_zone: 230, y_zone: 140, key: 'painting4', desc: 'A peaceful landscape.', imageKey: 'painting4' },
-            { x: 865, y: 605, x_zone: 230, y_zone: 140, key: 'painting5', desc: 'A modern portrait.', imageKey: 'painting5'} ,
-            { x: 140, y: 975, x_zone: 240, y_zone: 145, key: 'painting6', desc: 'A peaceful landscape.', imageKey: 'painting6'},
-            { x: 875, y: 975, x_zone: 240, y_zone: 145, key: 'painting7', desc: 'A modern portrait.', imageKey: 'painting7'}
+            { x: 155, y: 235, x_zone: 210, y_zone: 150, key: 'painting1', desc: 'ㅇ\n┌ㅡ┐', imageKey: 'painting1' },
+            { x: 512, y: 235, x_zone: 260, y_zone: 150, key: 'painting2', desc: '하나모미지 앞 눈밭에서 신난 하경이 넘 기엽', imageKey: 'painting2' },
+            { x: 865, y: 235, x_zone: 210, y_zone: 150, key: 'painting3', desc: '기모노 커플샷! 좀 잘 어울리는듯 인정??', imageKey: 'painting3' },
+            { x: 150, y: 605, x_zone: 230, y_zone: 140, key: 'painting4', desc: '째깐둥이 애기 하굥', imageKey: 'painting4' },
+            { x: 865, y: 605, x_zone: 230, y_zone: 140, key: 'painting5', desc: '여기 어디지 명동인가? 암튼 인형 왕 말랑말랑했음', imageKey: 'painting5'} ,
+            { x: 140, y: 975, x_zone: 240, y_zone: 145, key: 'painting6', desc: '삿포로에서 생수 광고 찍는 하경이. 상ㅡ쾌!', imageKey: 'painting6'},
+            { x: 875, y: 975, x_zone: 240, y_zone: 145, key: 'painting7', desc: '느좋카에서 멍때리는 하경이. 침착맨 맨투맨 탐난당.', imageKey: 'painting7'}
         ];
 
         this.paintingZones = [];
         this.paintings = paintings;
         this.paintingImages = [];
+        this.paintingImages_popup = [];;
 
         paintings.forEach((p, index) => {
             const zone = this.add.zone(p.x, p.y, p.x_zone, p.y_zone);
@@ -1404,8 +1538,14 @@ class GalleryScene extends Phaser.Scene {
             });
             this.paintingZones.push(zone);
 
-            const paintingImage = this.add.image(0, 0, p.imageKey).setVisible(false);
-            paintingImage.setDisplaySize(150, 150);
+            // 👉 그림 이미지 추가 (zone 위치에 맞게)
+            const paintingImage_popup = this.add.image(0, 0, p.imageKey).setVisible(false);
+            paintingImage_popup.setDisplaySize(150, 150);
+            this.paintingImages_popup.push(paintingImage_popup);
+
+            const paintingImage = this.add.image(p.x, p.y, p.imageKey)
+                .setDisplaySize(p.x_zone - 20, p.y_zone - 20) // 살짝 작게 넣으면 예쁘게 들어감
+                .setDepth(5); // 필요한 경우 depth 설정
             this.paintingImages.push(paintingImage);
         });
     }
@@ -1586,11 +1726,11 @@ class GalleryScene extends Phaser.Scene {
 
 
     showPaintingDescription(text, imageKey) {
-        const paintingImage = this.paintingImages[this.paintings.findIndex(p => p.imageKey === imageKey)];
-        paintingImage.setPosition(512, 624);
-        paintingImage.setVisible(true);
-        paintingImage.setDepth(12);
-        paintingImage.setDisplaySize(600, 600);
+        const paintingImage_popup = this.paintingImages_popup[this.paintings.findIndex(p => p.imageKey === imageKey)];
+        paintingImage_popup.setPosition(512, 624);
+        paintingImage_popup.setVisible(true);
+        paintingImage_popup.setDepth(12);
+        paintingImage_popup.setDisplaySize(600, 600);
 
         const frame = this.add.rectangle(512, 624, 600, 600, 0x000000, 0);
         frame.setDepth(13);
@@ -1624,7 +1764,7 @@ class GalleryScene extends Phaser.Scene {
 
         this.dialogBox = dialogBox;
         this.dialogText = dialogText;
-        this.currentPaintingImage = paintingImage;
+        this.currentPaintingImage_popup = paintingImage_popup;
         this.frame = frame;
     }
     
@@ -1638,10 +1778,10 @@ class GalleryScene extends Phaser.Scene {
         if (this.arrowIndicator) this.arrowIndicator.destroy();
     
         // 그림 설명이라면 그림 이미지와 액자도 제거
-        if (this.currentPaintingImage) {
-            this.currentPaintingImage.setVisible(false);
-            this.currentPaintingImage.setPosition(0, 0);
-            this.currentPaintingImage = null;
+        if (this.currentPaintingImage_popup) {
+            this.currentPaintingImage_popup.setVisible(false);
+            this.currentPaintingImage_popup.setPosition(0, 0);
+            this.currentPaintingImage_popup = null;
         }
     
         if (this.frame) {
@@ -1799,6 +1939,9 @@ class RooftopScene extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
         this.isTransitioning = false; // 전환 상태 초기화
         this.transitionStarted=false;
+        this.hasShownMessage_1 = false; // 메시지 표시 여부 초기화
+        this.hasShownMessage_2 = false; // 메시지 표시 여부 초기화
+        this.collisionCount = 0;
         this.add.image(512, 640, 'rooftopBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
@@ -1858,6 +2001,30 @@ class RooftopScene extends Phaser.Scene {
             // 상호작용 프롬프트 표시 (필요 시 추가 가능)
         }, null, this);
 
+        this.stopZone1 = this.add.zone(512, 1000, 1024, 50);
+        this.physics.add.existing(this.stopZone1);
+        this.stopZone1.body.setAllowGravity(false);
+        this.stopZone1.body.setImmovable(true);
+
+        this.physics.add.overlap(this.player, this.stopZone1, () => {
+            if (!this.hasShownMessage_1) {
+                this.hasShownMessage_1 = true;
+                this.showNormalDescription("(저기 멀리서 누군가가 보인다. 오빠인가..?)", null);
+            }
+        });
+
+        this.stopZone2 = this.add.zone(512, 700, 1024, 50);
+        this.physics.add.existing(this.stopZone2);
+        this.stopZone2.body.setAllowGravity(false);
+        this.stopZone2.body.setImmovable(true);
+
+        this.physics.add.overlap(this.player, this.stopZone2, () => {
+            if (!this.hasShownMessage_2) {
+                this.hasShownMessage_2 = true;
+                this.showNormalDescription("여기야 여기!!", null);
+            }
+        });
+
         // 터치 입력 처리
         this.input.on('pointerdown', (pointer) => {
             if (this.isInteracting && this.isWaitingForInput) {
@@ -1868,7 +2035,7 @@ class RooftopScene extends Phaser.Scene {
                 console.log('Touch: Closing ticket message');
                 this.isWaitingForTicketInput = false;
                 this.hideTicketAndMessage();
-            } else if (!this.isInteracting && !this.isShowingTicket) {
+            } else if (!this.isInteracting) {
                 if (this.physics.world.overlap(this.player, this.npcZone) &&
                     Phaser.Geom.Rectangle.ContainsPoint(this.npcZone.getBounds(), { x: pointer.x, y: pointer.y })) {
                     this.handleNpcInteraction();
@@ -1909,12 +2076,21 @@ class RooftopScene extends Phaser.Scene {
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 if (this.isTouchInputActive) {
-                    // 🔁 이동 방향 전환
-                    this.isMovingX = !this.isMovingX;
-        
-                    // 충돌 시 속도와 애니메이션 중지 (즉시 반응)
-                    this.player.setVelocity(0);
-                    this.player.anims.stop();
+                    this.collisionCount += 1;
+            
+                    if (this.collisionCount >= 3) {
+                        // 3번 이상 충돌 시 이동 중지
+                        this.isTouchInputActive = false;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                        this.collisionCount = 0; // 충돌 카운트 초기화
+                        console.log('⚠️ 터치 이동 중 충돌 3회 → 이동 중지됨');
+                    } else {
+                        // 방향 전환
+                        this.isMovingX = !this.isMovingX;
+                        this.player.setVelocity(0);
+                        this.player.anims.stop();
+                    }
                 }
             });
         });
@@ -1934,7 +2110,7 @@ class RooftopScene extends Phaser.Scene {
     }
 
     update() {
-        const speed = 400;
+        const speed = 100;
         let velocityX = 0;
         let velocityY = 0;
 
@@ -1944,7 +2120,7 @@ class RooftopScene extends Phaser.Scene {
             return;
           }
 
-        if (!this.isInteracting && !this.isShowingTicket) {
+        if (!this.isInteracting) {
             // 키보드 입력 처리
             let hasKeyboardInput = false;
             if (this.cursors.left.isDown) {
@@ -2056,12 +2232,48 @@ class RooftopScene extends Phaser.Scene {
         // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
         const callback = () => {
             if (this.registry.get('hasReceivedTicket')==false) {
+                this.isInteracting = true;
                 console.log('First NPC conversation finished, preparing to show ticket.');
                 // 대화창이 완전히 사라진 후 입장권 표시
                 this.time.delayedCall(500, () => {
                     this.showTicketAndMessage();
                 });
             }
+        };
+
+        this.typeText(text, dialogText, this, callback);
+
+        this.dialogBox = dialogBox;
+        this.dialogText = dialogText;
+    }
+
+    showNormalDescription(text, imageKey) {
+        const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
+        const dialogText = this.add.text(512, 1210, '', { 
+            fontFamily: 'Nanum Gothic',
+            fontSize: '30px', 
+            color: '#fff', 
+            align: 'center', 
+            // wordWrap: { width: 700 }
+        }).setOrigin(0.5);
+        dialogText.setLineSpacing(10);
+        dialogBox.setDepth(10);
+        dialogText.setDepth(11);
+
+        this.isInteracting = true;
+        this.isWaitingForInput = false;
+        this.continueTyping = false;
+
+        // ▼ 표시를 위한 텍스트 객체
+        this.arrowIndicator = this.add.text(950, 1230, '▼', {
+            fontSize: '30px',
+            color: '#fff'
+        }).setOrigin(0.5).setDepth(11).setVisible(false);
+
+
+        const callback = () => {
+            this.time.delayedCall(500, () => {
+            });
         };
 
         this.typeText(text, dialogText, this, callback);
@@ -2087,7 +2299,7 @@ class RooftopScene extends Phaser.Scene {
         console.log('Ticket image displayed at (400, 300).');
 
         // 입장권 획득 메시지 표시
-        const envelopeMessage = '(편지를 전달받았았습니다.)';
+        const envelopeMessage = '(편지를 전달받았습니다.)';
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
@@ -2142,9 +2354,9 @@ class RooftopScene extends Phaser.Scene {
         this.cameras.main.fadeOut(100, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
         this.cameras.main.once('camerafadeoutcomplete', () => {
             this.showFullLetter();
-    });
-        
-
+        });
+        this.showNormalDescription("편지 잘 읽어봤어? ㅎㅎ 어쩌고저쩌고 끝~", null);
+        this.isInteracting = false;
         // // 전역 상태 업데이트
         // this.registry.set('hasReceivedTicket', true);
         // console.log('hasReceivedTicket set to true in registry.');
@@ -2180,12 +2392,19 @@ class RooftopScene extends Phaser.Scene {
     
         // 클릭 시 사라지게
         this.fullLetterImage.once('pointerdown', () => {
-            this.fullLetterImage.destroy();
-            this.fullLetterImage = null;
-    
-            // 티켓 획득 처리
-            this.registry.set('hasReceivedTicket', true);
-            console.log('hasReceivedTicket set to true in registry.');
+            this.tweens.add({
+                targets: this.fullLetterImage,
+                alpha: 0,
+                duration: 500,
+                ease: 'Linear',
+                onComplete: () => {
+                    this.fullLetterImage.destroy();
+                    this.fullLetterImage = null;
+                    // 티켓 획득 처리
+                    this.registry.set('hasReceivedTicket', true);
+                    console.log('hasReceivedTicket set to true in registry.');
+                }
+            });
         });
     }
     

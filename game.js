@@ -140,14 +140,14 @@ class EntranceScene extends Phaser.Scene {
         this.npc.setFrame(59); // NPC 스프라이트 프레임
 
         // 호랑이 동상1 상호작용
-        this.tigerZone1 = this.add.zone(280, 600, 150, 160);
+        this.tigerZone1 = this.add.zone(280, 580, 60, 160);
         this.physics.add.existing(this.tigerZone1);
         this.physics.add.overlap(this.player, this.tigerZone1, () => {
             // 상호작용 프롬프트 표시 (필요 시 추가 가능)
         }, null, this);
 
         // 호랑이 동상2 상호작용
-        this.tigerZone2 = this.add.zone(740, 600, 150, 160);
+        this.tigerZone2 = this.add.zone(740, 580, 60, 160);
         this.physics.add.existing(this.tigerZone2);
         this.physics.add.overlap(this.player, this.tigerZone2, () => {
             // 상호작용 프롬프트 표시 (필요 시 추가 가능)
@@ -878,7 +878,7 @@ class ReceptionScene extends Phaser.Scene {
             this.physics.add.staticBody(664, 1210, 360, 70),
             this.physics.add.staticBody(0, 0, 150, 1280),
             this.physics.add.staticBody(874, 0, 150, 1280),
-            this.physics.add.staticBody(315, 0, 410, 400),
+            this.physics.add.staticBody(315, 0, 410, 360),
 
         ];
         this.walls.forEach(wall => {
@@ -936,22 +936,21 @@ class ReceptionScene extends Phaser.Scene {
         });
 
         // NPC 상호작용 Zone
-        this.npcZone = this.add.zone(512, 300, 100, 300);
+        this.npcZone = this.add.zone(512, 300, 100, 200);
         this.physics.add.existing(this.npcZone);
         this.physics.add.overlap(this.player, this.npcZone, () => {
             // this.showInteractionPrompt();
         }, null, this);
 
-        // NPC 상호작용 Zone
-        this.painting1Zone = this.add.zone(240, 200, 100, 200);
+        // 그림1 상호작용 Zone
+        this.painting1Zone = this.add.zone(240, 170, 100, 200);
         this.physics.add.existing(this.painting1Zone);
         this.physics.add.overlap(this.player, this.painting1Zone, () => {
-            // this.showInteractionPrompt();
         }, null, this);
-        this.painting2Zone = this.add.zone(785, 200, 100, 200);
+        // 그림2 상호작용 Zone
+        this.painting2Zone = this.add.zone(785, 170, 100, 200);
         this.physics.add.existing(this.painting2Zone);
         this.physics.add.overlap(this.player, this.painting2Zone, () => {
-            // this.showInteractionPrompt();
         }, null, this);
 
         // Spacebar 입력 설정
@@ -2701,7 +2700,7 @@ const config = {
         default: 'arcade',
         arcade: {
              gravity: { y: 0 } ,
-             debug:false // debug option
+             debug:true // debug option
             }
     },
     scale: {

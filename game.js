@@ -44,6 +44,8 @@ class LoadingScene extends Phaser.Scene {
         this.load.image('ticket', 'assets/ticket_concrete.png');
         this.load.image('envelope', 'assets/envelope.png');
         this.load.image('letter', 'assets/letter.png');
+        this.load.image('left', 'assets/left.png');
+        this.load.image('right', 'assets/right.png');
 
         this.load.image('painting1', 'assets/painting1.png');
         this.load.image('painting2', 'assets/painting2.png');
@@ -57,7 +59,6 @@ class LoadingScene extends Phaser.Scene {
         this.load.image('painting10', 'assets/painting10.png');
 
         this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
-        // this.load.audio('galleryBgm', 'assets/gallery_bgm.mp3');
         this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
     }
 }
@@ -2011,7 +2012,7 @@ class RooftopScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.stopZone1, () => {
             if (!this.hasShownMessage_1) {
                 this.hasShownMessage_1 = true;
-                this.showNormalDescription("(저기 멀리서 누군가가 보인다. 오빠인가..?)", null);
+                this.showNormalDescription("(저기 멀리에서 누군가가 보인다. 오빠인가..?)", null);
             }
         });
 
@@ -2355,9 +2356,9 @@ class RooftopScene extends Phaser.Scene {
         
         this.cameras.main.fadeOut(100, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.showFullLetter();
+            this.showFullLetterSequence();
         });
-        this.showNormalDescription("편지 잘 읽어봤어? ㅎㅎ 어쩌고저쩌고 끝~", null);
+        // this.showNormalDescription("편지 잘 읽어봤어? ㅎㅎ 어쩌고저쩌고 끝~", null);
         this.isInteracting = false;
         // // 전역 상태 업데이트
         // this.registry.set('hasReceivedTicket', true);
@@ -2385,32 +2386,84 @@ class RooftopScene extends Phaser.Scene {
         this.continueTyping = false;
     }
 
-    showFullLetter() {
-        // 전체화면 편지 이미지 추가
+    showFullLetterSequence() {
         this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
-        this.fullLetterImage = this.add.image(512, 640, 'letter').setDepth(20);
-        this.fullLetterImage.setDisplaySize(1024, 1280);
-        this.fullLetterImage.setInteractive();
+        this.letterImages = ['letter', 'letter', 'letter']; // 미리 로딩된 이미지 키들
+        this.currentLetterIndex = 0;
+        this.showNextLetter();
+        this.createLetterArrows();
+    }
+
+    showNextLetter(isBack = false) {
+        const duration = 400;
     
-        // 클릭 시 사라지게
-        this.fullLetterImage.once('pointerdown', () => {
+        if (this.fullLetterImage) {
             this.tweens.add({
                 targets: this.fullLetterImage,
+                x: isBack ? this.fullLetterImage.x + 200 : this.fullLetterImage.x - 200,
                 alpha: 0,
-                duration: 500,
-                ease: 'Linear',
+                duration,
                 onComplete: () => {
                     this.fullLetterImage.destroy();
                     this.fullLetterImage = null;
-                    // 티켓 획득 처리
-                    this.registry.set('hasReceivedTicket', true);
-                    console.log('hasReceivedTicket set to true in registry.');
+                    this._createNextLetter(isBack);
                 }
             });
+        } else {
+            this._createNextLetter(isBack);
+        }
+    }
+
+    _createNextLetter(isBack) {
+        const imageKey = this.letterImages[this.currentLetterIndex];
+        this.fullLetterImage = this.add.image(isBack ? 312 : 712, 640, imageKey)
+            .setDisplaySize(1024, 1280)
+            .setDepth(20)
+            .setAlpha(0);
+
+        this.tweens.add({
+            targets: this.fullLetterImage,
+            x: 512,
+            alpha: 1,
+            duration: 400,
+            ease: 'Sine.easeInOut'
         });
     }
     
 
+    createLetterArrows() {
+        this.leftArrow = this.add.image(100, 640, 'left')
+            .setScale(0.15)
+            .setDepth(21)
+            .setInteractive()
+            .on('pointerdown', () => {
+                if (this.currentLetterIndex > 0) {
+                    this.currentLetterIndex--;
+                    this.showNextLetter(true);
+                }
+            });
+
+        this.rightArrow = this.add.image(924, 640, 'right')
+            .setScale(0.15)
+            .setDepth(21)
+            .setInteractive()
+            .on('pointerdown', () => {
+                if (this.currentLetterIndex < this.letterImages.length - 1) {
+                    this.currentLetterIndex++;
+                    this.showNextLetter(false);
+                } else {
+                    this.removeLetterArrows();
+                    this.fullLetterImage.destroy();
+                    this.registry.set('hasReceivedTicket', true);
+                }
+            });
+    }
+
+    removeLetterArrows() {
+        this.leftArrow?.destroy();
+        this.rightArrow?.destroy();
+    }
+    
     // 텍스트 타이핑 메서드 (대화창용)
     typeText(text, targetText, scene, callback) {
         let currentIndex = 0;
@@ -2618,8 +2671,10 @@ class RooftopScene extends Phaser.Scene {
     // NPC 상호작용 처리 메서드
     handleNpcInteraction() {
         this.isInteracting = true;
+        this.isTransitioning = true;  // 🎯 추가
+    
         let dialogText;
-        dialogText = '안녕 하경아! 그림들 구경 잘 했어??\n\n 오늘 우리 400일 이더라! 완전 뜻깊은 날이지!ㅎㅎ\n 편지를 좀 준비했는데, 읽어줄래??';
+        dialogText = '안녕 하경아! 그림들 구경 잘 했어??\n\n 편지를 좀 준비했는데, 읽어줄래??';
         this.showDescription(dialogText, null);
     }
 

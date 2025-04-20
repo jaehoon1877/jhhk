@@ -32,7 +32,7 @@ class LoadingScene extends Phaser.Scene {
         this.load.on('complete', () => {
             this.cameras.main.fadeOut(100, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
             this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('RooftopScene', { returnToEntrance: false });
+            this.scene.start('EntranceScene', { returnToEntrance: false });
         });
         });
 

@@ -2783,7 +2783,7 @@ const config = {
         default: 'arcade',
         arcade: {
              gravity: { y: 0 } ,
-             debug:true // debug option
+             debug:false // debug option
             }
     },
     scale: {

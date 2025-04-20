@@ -32,7 +32,7 @@ class LoadingScene extends Phaser.Scene {
         this.load.on('complete', () => {
             this.cameras.main.fadeOut(100, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
             this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('EntranceScene', { returnToEntrance: false });
+            this.scene.start('RooftopScene', { returnToEntrance: false });
         });
         });
 
@@ -42,6 +42,7 @@ class LoadingScene extends Phaser.Scene {
         this.load.image('receptionBg', 'assets/reception.png');
         this.load.image('rooftopBg', 'assets/rooftop.png');
         this.load.image('ticket', 'assets/ticket_concrete.png');
+        this.load.image('ticket_part', 'assets/ticket_part.png');
         this.load.image('envelope', 'assets/envelope.png');
         this.load.image('letter', 'assets/letter.png');
         this.load.image('left', 'assets/left.png');
@@ -60,6 +61,7 @@ class LoadingScene extends Phaser.Scene {
 
         this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
         this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
+        // this.load.audio('letterBgm', 'assets/letter_bgm.mp3'); // 편지 음악
     }
 }
 
@@ -92,6 +94,10 @@ class EntranceScene extends Phaser.Scene {
         this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
+
+
+
+
 
         // BGM 재생
         if (this.sound.get('entranceBgm')) {
@@ -152,6 +158,29 @@ class EntranceScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.tigerZone2, () => {
             // 상호작용 프롬프트 표시 (필요 시 추가 가능)
         }, null, this);
+
+        // 티켓 조각 관련
+        if (this.registry.get('hasReceivedTicket')==false) {
+            this.collectedPieces = 0;
+            this.totalPieces = 3;
+            this.ticketPieces = [];
+            const piecePositions = [
+                { x: 300, y: 700 },
+                { x: 720, y: 700 },
+                { x: 510, y: 850 }
+            ];
+            piecePositions.forEach((pos, index) => {
+                const piece = this.physics.add.sprite(pos.x, pos.y, 'ticket_part')
+                    .setScale(0.05)
+                    .setInteractive()
+                    .setDepth(1);
+                piece.index = index;
+                this.physics.add.overlap(this.player, piece, () => this.collectTicketPiece(piece));
+                this.ticketPieces.push(piece);
+            });
+        } else {
+            this.collectedPieces = 3;
+        }
 
         // NPC 상호작용 Zone
         this.npcZone = this.add.zone(512, 1010, 80, 80);
@@ -371,6 +400,23 @@ class EntranceScene extends Phaser.Scene {
         this.player.setVelocity(velocityX, velocityY);
     }
 
+    collectTicketPiece(piece) {
+        if (!piece.collected) {
+            let dialogText;
+            if (this.collectedPieces+1 == this.totalPieces) {
+                dialogText = `(모든 티켓 조각을 모았습니다.직원에게 돌아가세요.)`;
+            } else {
+                dialogText = `(티켓 조각을 획득했습니다. ${this.collectedPieces + 1} / ${this.totalPieces}개 )`;
+            }
+            this.NormalShowDescription(dialogText, null);
+
+            piece.collected = true;
+            piece.destroy();
+            this.collectedPieces++;
+            console.log(`Collected piece ${piece.index + 1}. Total: ${this.collectedPieces}`);
+        }
+    }
+
     // 대화창 표시 메서드
     NormalShowDescription(text, imageKey) {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
@@ -419,6 +465,7 @@ class EntranceScene extends Phaser.Scene {
         dialogBox.setDepth(10);
         dialogText.setDepth(11);
 
+        
         this.isInteracting = true;
         this.isWaitingForInput = false;
         this.continueTyping = false;
@@ -431,13 +478,11 @@ class EntranceScene extends Phaser.Scene {
 
         // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
         const callback = () => {
-            if (this.registry.get('hasReceivedTicket')==false) {
-                console.log('First NPC conversation finished, preparing to show ticket.');
-                // 대화창이 완전히 사라진 후 입장권 표시
-                this.time.delayedCall(500, () => {
-                    this.showTicketAndMessage();
-                });
-            }
+            console.log('First NPC conversation finished, preparing to show ticket.');
+            // 대화창이 완전히 사라진 후 입장권 표시
+            this.time.delayedCall(500, () => {
+                this.showTicketAndMessage();
+            });
         };
 
         this.typeText(text, dialogText, this, callback);
@@ -760,13 +805,23 @@ class EntranceScene extends Phaser.Scene {
         this.isInteracting = true;
         let dialogText;
         if (this.registry.get('hasReceivedTicket')==false) {
-            // 첫 대화
-            dialogText = '안녕하세요 하경님, 만나서 반가워요!\n저희 갤러리의 JH님께서 이 티켓의 전달을 부탁하셨어요.\n 이 티켓을 가지고 갤러리 안으로 들어가시면\n저희 직원이 하경님의 관람을 도와주실거예요 ^^';
+            if (this.registry.get('isFirstTalk')==true) {
+                dialogText = '안녕하세요. 하경님 맞으으시죠? 만나서 반가워요!\nJH님께서 저희 갤러리의 VIP 관람 티켓의 전달을 부탁하셨는데...\n하경님을 마중 가는 길에 실수로 잃어버렸지 뭐예요 ㅠㅠ..\n그래서 혹시 괜찮으시면..\n티켓 조각 찾는 거를 도와주실 수 있을까요??\n조각은 총 3개이고, 아마 여기 어딘가에 떨어져 있을거예요!';
+                this.registry.set('isFirstTalk', false);  
+            } else {
+                if (this.collectedPieces == 3) {
+                    dialogText = '모든 조각을 모으셨군요! 감사합니다!\n제가 이 조각들을 완전한 티켓으로 합쳐드릴게요!\n이 티켓을 가지고 갤러리 안으로 들어가시면\n저희 직원이 하경 님의 관람을 도와주실 거예요 :)';
+                    this.showDescription(dialogText, null);
+                    return
+                } else {
+                    dialogText = '티켓 조각이 모자라네요 ㅠㅠ\n조각은 총 3개이고, 아마 여기 어딘가에 떨어져 있을 거예요!';
+                }
+            }
         } else {
             // 두 번째 대화 (이후 반복)
-            dialogText = '이 티켓을 가지고 갤러리 안으로 들어가시면\n저희 직원이 하경님의 관람을 도와주실거예요 ^^';
+            dialogText = '이 티켓을 가지고 갤러리 안으로 들어가시면\n저희 직원이 하경 님의 관람을 도와주실 거예요 ^^';
         }
-        this.showDescription(dialogText, null);
+        this.NormalShowDescription(dialogText, null);
     }
     // NPC 상호작용 처리 메서드
     handleTiger1Interaction() {
@@ -1244,7 +1299,7 @@ class ReceptionScene extends Phaser.Scene {
 
     handleNpcInteraction() {
         this.isInteracting = true;
-        this.showDescription('안녕하세요, JH갤러리입니다. 무엇을 도와드릴까요?', null, () => {
+        this.showDescription('안녕하세요, JH갤러리입니다.\n무엇을 도와드릴까요?', null, () => {
             // 입장권 소지 여부 확인
             const hasReceivedTicket = this.registry.get('hasReceivedTicket');
             console.log('Checking hasReceivedTicket:', hasReceivedTicket);
@@ -1274,7 +1329,7 @@ class ReceptionScene extends Phaser.Scene {
     }
     handlePaintingInteraction() {
         this.isInteracting = true;
-        this.showDescription('전혀 모르는 작품이다..ㅠㅠㅠ', null, () => {
+        this.showDescription('(전혀 모르는 작품이다..ㅠㅠㅠ)', null, () => {
             this.hideDescription();
         });
     }
@@ -1654,7 +1709,7 @@ class GalleryScene extends Phaser.Scene {
         console.log('[NPC] hasTalkedToGalleryNpc:', hasTalked);
 
         if (!hasTalked) {
-            const introText = "안녕하세요, 이 곳은 JH 작가님의 작품들을\n전시해 놓은 갤러리 입니다.\nJH님이 하경님과 만나면서\n간직한 사진들을 이 갤러리에 기증하셨어요.\n그러면 지금부터 작품들을 자유롭게 둘러보시고,\n감상을 충분히 하셨다면 저에게 말씀해 주세요.";
+            const introText = "안녕하세요, 이곳은 JH 작가님의 작품들을\n전시해 놓은 장소입니다.\nJH님이 하경 님과 만나면서\n간직한 사진들을 이 갤러리에 기증하셨어요.\n그러면 지금부터 작품들을 자유롭게 둘러보시고,\n감상을 충분히 하셨다면 저에게 말씀해 주세요.";
             this.showNpcDescription(introText, null, () => {
                 console.log('[NPC] First interaction complete');
                 this.registry.set('hasTalkedToGalleryNpc', true);
@@ -1662,7 +1717,7 @@ class GalleryScene extends Phaser.Scene {
         } else {
             if (!hasConfirmed) {
                 console.log('[NPC] Showing confirmation prompt');
-                const confirmText = "충분히 감상하셨나요?\n그 다음 장소인 루프탑으로 안내를 도와드릴텐데,\n마음의 준비가 되시면 말씀해주세요.\n누군가가 기다리고 계신 것 같아요.";
+                const confirmText = "충분히 감상하셨나요?\n그러면 그 다음 장소인 루프탑으로 안내를 도와드릴텐데,\n마음의 준비가 되시면 말씀해 주세요.\n누군가가 기다리고 계신 것 같아요.";
                 this.showNpcDescription(confirmText, null, () => {
                     this.registry.set('awaitingConfirmation', true);
                 });
@@ -1676,7 +1731,7 @@ class GalleryScene extends Phaser.Scene {
                     this.isTransitioning = true;
                     this.cameras.main.fadeOut(500, 0, 0, 0); // 1초 동안 검정색으로 페이드 아웃
                     this.cameras.main.once('camerafadeoutcomplete', () => {
-                    this.scee.start('RooftopScene');
+                    this.scene.start('RooftopScene');
                     });
                 });
             }
@@ -2233,7 +2288,7 @@ class RooftopScene extends Phaser.Scene {
         // };
         // 첫 대화가 끝난 후 입장권 이미지와 메시지 표시
         const callback = () => {
-            if (this.registry.get('hasReceivedTicket')==false) {
+            if (this.registry.get('hasReceivedLetter')==false) {
                 this.isInteracting = true;
                 console.log('First NPC conversation finished, preparing to show ticket.');
                 // 대화창이 완전히 사라진 후 입장권 표시
@@ -2387,6 +2442,11 @@ class RooftopScene extends Phaser.Scene {
 
     showFullLetterSequence() {
         this.cameras.main.fadeIn(500, 0, 0, 0); // 1초 동안 부드럽게 나타남
+
+        // // 👉 편지 음악 시작
+        // this.letterBgm = this.sound.add('letterBgm', { volume: 0.5, loop: true });
+        // this.letterBgm.play();
+
         this.letterImages = ['letter', 'letter', 'letter']; // 미리 로딩된 이미지 키들
         this.currentLetterIndex = 0;
         this.showNextLetter();
@@ -2442,7 +2502,7 @@ class RooftopScene extends Phaser.Scene {
                 }
             });
 
-        this.rightArrow = this.add.image(924, 640, 'right')
+            this.rightArrow = this.add.image(924, 640, 'right')
             .setScale(0.15)
             .setDepth(21)
             .setInteractive()
@@ -2453,9 +2513,16 @@ class RooftopScene extends Phaser.Scene {
                 } else {
                     this.removeLetterArrows();
                     this.fullLetterImage.destroy();
-                    this.registry.set('hasReceivedTicket', true);
+                    this.registry.set('hasReceivedLetter', true);
+        
+                    // 👉 엔딩으로 페이드 아웃 전환
+                    this.cameras.main.fadeOut(1000, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.start('EndingScene');
+                    });
                 }
             });
+        
     }
 
     removeLetterArrows() {
@@ -2673,7 +2740,7 @@ class RooftopScene extends Phaser.Scene {
         this.isTransitioning = true;  // 🎯 추가
     
         let dialogText;
-        dialogText = '안녕 하경아! 그림들 구경 잘 했어??\n\n 편지를 좀 준비했는데, 읽어줄래??';
+        dialogText = '안녕 하경아. 여기까지 오느라 고생했어!\n그림들 구경은 잘 했어??\n마음에 들었으면 좋겠는데, 어떨지 모르겠네 ㅎㅎ\n아 맞다, 편지를 좀 준비했는데 읽어줄래??';
         this.showDescription(dialogText, null);
     }
 
@@ -2688,6 +2755,22 @@ class RooftopScene extends Phaser.Scene {
         if (this.ticketImage) {
             this.ticketImage.destroy();
         }
+    }
+}
+
+class EndingScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'EndingScene' });
+    }
+
+    create() {
+        this.cameras.main.fadeIn(1000, 0, 0, 0); // 부드럽게 나타남
+
+        this.add.text(512, 640, 'Thank you for Playing :)', {
+            fontFamily: 'Nanum Gothic',
+            fontSize: '48px',
+            color: '#ffffff'
+        }).setOrigin(0.5);
     }
 }
 
@@ -2711,12 +2794,14 @@ const config = {
         width: 1024,
         height: 1280
     },
-    scene: [LoadingScene,GalleryScene,EntranceScene, ReceptionScene,RooftopScene],
+    scene: [LoadingScene,GalleryScene,EntranceScene, ReceptionScene,RooftopScene,EndingScene],
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
         preBoot: (game) => {
             game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화
+            game.registry.set('isFirstTalk',true);
             game.registry.set('hasTalkedToGalleryNpc', false); // 게임 시작 시 한 번만 실행
             game.registry.set('awaitingConfirmation', false); // 게임 시작 시 한 번만 실행
+            game.registry.set('hasReceivedLetter', false);
         }
     }
 };

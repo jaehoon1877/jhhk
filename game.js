@@ -9,13 +9,13 @@ class LoadingScene extends Phaser.Scene {
 
         // 텍스트 스타일
         const loadingText = this.add.text(width / 2, height / 2 - 50, '로딩 중...', {
-            fontSize: '32px',
+            fontSize: '35px',
             color: '#ffffff',
             fontFamily: 'Nanum Gothic'
         }).setOrigin(0.5);
 
         const percentText = this.add.text(width / 2, height / 2, '0%', {
-            fontSize: '24px',
+            fontSize: '35px',
             color: '#ffffff'
         }).setOrigin(0.5);
 
@@ -95,10 +95,6 @@ class EntranceScene extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(4);
 
-
-
-
-
         // BGM 재생
         if (this.sound.get('entranceBgm')) {
             // this.sound.removeByKey('entranceBgm');
@@ -159,28 +155,95 @@ class EntranceScene extends Phaser.Scene {
             // 상호작용 프롬프트 표시 (필요 시 추가 가능)
         }, null, this);
 
+
+        // 쓰레기통 상호작용
+        this.trashZone1 = this.add.zone(120, 700, 100, 100);
+        this.physics.add.existing(this.trashZone1);
+        this.physics.add.overlap(this.player, this.trashZone1, () => {
+            // 상호작용 프롬프트 표시 (필요 시 추가 가능)
+        }, null, this);
+        this.trashZone2 = this.add .zone(900, 700, 100, 100);
+        this.physics.add.existing(this.trashZone2);
+        this.physics.add.overlap(this.player, this.trashZone2, () => {
+            // 상호작용 프롬프트 표시 (필요 시 추가 가능)
+        }, null, this);
+
+        function isTooClose(pos, positions, minDistance) {
+            for (const existing of positions) {
+                const dx = pos.x - existing.x;
+                const dy = pos.y - existing.y;
+                const distSq = dx * dx + dy * dy;
+                if (distSq < minDistance * minDistance) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        this.ticketPiecesGroup = this.physics.add.staticGroup();
+
+        const piecePositions = [];
+        const minDistance = 150;
+        const maxAttempts = 100;
+        const rangeX = [300, 800];
+        const rangeY = [700, 900];
+
+        for (let i = 0; i < 3; i++) {
+            let attempts = 0;
+            let newPos;
+        
+            do {
+                const x = Phaser.Math.Between(rangeX[0], rangeX[1]);
+                const y = Phaser.Math.Between(rangeY[0], rangeY[1]);
+                newPos = { x, y };
+                attempts++;
+            } while (isTooClose(newPos, piecePositions, minDistance) && attempts < maxAttempts);
+        
+            piecePositions.push(newPos);
+        }
+
         // 티켓 조각 관련
         if (this.registry.get('hasReceivedTicket')==false) {
             this.collectedPieces = 0;
             this.totalPieces = 3;
-            this.ticketPieces = [];
-            const piecePositions = [
-                { x: 300, y: 700 },
-                { x: 720, y: 700 },
-                { x: 510, y: 850 }
-            ];
             piecePositions.forEach((pos, index) => {
-                const piece = this.physics.add.sprite(pos.x, pos.y, 'ticket_part')
+                const piece = this.physics.add.staticSprite(pos.x, pos.y, 'ticket_part')
                     .setScale(0.05)
-                    .setInteractive()
-                    .setDepth(1);
+                    .setDepth(1)
+                    .refreshBody();
                 piece.index = index;
-                this.physics.add.overlap(this.player, piece, () => this.collectTicketPiece(piece));
-                this.ticketPieces.push(piece);
+                piece.collected = false;
+                this.ticketPiecesGroup.add(piece);
+                
+            
+                // 👉 zone 생성
+                const zone = this.add.zone(pos.x, pos.y, 100, 100);
+                zone.setOrigin(0.5);
+                this.physics.add.existing(zone);
+                zone.piece = piece;
+                this.physics.add.overlap(this.player, zone); // player와 overlap 관계 설정
+            
+                // 터치 시 zone 안 클릭 여부 확인
+                zone.setInteractive();
+                zone.on('pointerdown', (pointer) => {
+                    if (
+                        this.physics.world.overlap(this.player, zone) &&
+                        !piece.collected
+                    ) {
+                        this.collectTicketPiece(piece);
+                    }
+                });
+            
+                piece.interactionZone = zone; // 필요시 추후 제거를 위해 보관
             });
         } else {
             this.collectedPieces = 3;
         }
+
+        this.physics.add.collider(this.player, this.ticketPiecesGroup, () => {
+            this.player.setVelocity(0);
+            this.player.anims.stop();
+    });
 
         // NPC 상호작용 Zone
         this.npcZone = this.add.zone(512, 1010, 80, 80);
@@ -208,7 +271,13 @@ class EntranceScene extends Phaser.Scene {
                     this.handleTiger1Interaction();
                 } else if (this.physics.world.overlap(this.player, this.tigerZone2) &&
                     Phaser.Geom.Rectangle.ContainsPoint(this.tigerZone2.getBounds(), { x: pointer.x, y: pointer.y })) {
-                    this.handleTiger2Interaction();           
+                    this.handleTiger2Interaction();    
+                } else if (this.physics.world.overlap(this.player, this.trashZone1) &&
+                    Phaser.Geom.Rectangle.ContainsPoint(this.trashZone1.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handleTrashInteraction();       
+                } else if (this.physics.world.overlap(this.player, this.trashZone2) &&
+                    Phaser.Geom.Rectangle.ContainsPoint(this.trashZone2.getBounds(), { x: pointer.x, y: pointer.y })) {
+                    this.handleTrashInteraction();     
                 } else {
                     this.targetPosition.x = pointer.x;
                     this.targetPosition.y = pointer.y;
@@ -229,18 +298,43 @@ class EntranceScene extends Phaser.Scene {
                 this.isWaitingForTicketInput = false;
                 this.hideTicketAndMessage();
             } else if (!this.isInteracting) {
+                this.ticketPiecesGroup.children.iterate((piece) => {
+                    if (piece && !piece.collected && Phaser.Geom.Intersects.RectangleToRectangle(
+                        this.player.getBounds(),
+                        piece.getBounds()
+                    )) {
+                        this.collectTicketPiece(piece);
+                    }
+                });
                 if (this.physics.world.overlap(this.player, this.npcZone)) {
                     this.handleNpcInteraction();
                 } else if (this.physics.world.overlap(this.player, this.tigerZone1)) {
                     this.handleTiger1Interaction();
                 } else if (this.physics.world.overlap(this.player, this.tigerZone2)) {
                     this.handleTiger2Interaction();
+                } else if (this.physics.world.overlap(this.player, this.trashZone1)) {
+                    this.handleTrashInteraction();
+                } else if (this.physics.world.overlap(this.player, this.trashZone2)) {
+                    this.handleTrashInteraction();
                 }
             }
                 
         });
 
         // 벽 설정
+        this.wallRects = [
+            new Phaser.Geom.Rectangle(360, 420 , 70, 70),
+            new Phaser.Geom.Rectangle(590, 420, 70, 70),
+            new Phaser.Geom.Rectangle(335, 440, 20, 190),
+            new Phaser.Geom.Rectangle(665, 440, 20, 190),
+            new Phaser.Geom.Rectangle(145, 600, 210, 30),
+            new Phaser.Geom.Rectangle(665, 600 , 210, 30),
+            new Phaser.Geom.Rectangle(0, 600, 150, 425),
+            new Phaser.Geom.Rectangle(870, 600, 150, 425),
+            new Phaser.Geom.Rectangle(0, 1020, 320, 425),
+            new Phaser.Geom.Rectangle(700, 1020, 320, 425),
+        ];
+        
         this.walls = [
             this.physics.add.staticBody(490, 1000, 45, 45), // NPC
 
@@ -268,6 +362,7 @@ class EntranceScene extends Phaser.Scene {
                     if (this.collisionCount >= 3) {
                         // 3번 이상 충돌 시 이동 중지
                         this.isTouchInputActive = false;
+                        this.targetPosition = { x: this.player.x, y: this.player.y }; // 💥 이동 목표 무효화
                         this.player.setVelocity(0);
                         this.player.anims.stop();
                         this.collisionCount = 0; // 충돌 카운트 초기화
@@ -317,7 +412,7 @@ class EntranceScene extends Phaser.Scene {
             return;
         }
 
-        if (!this.isInteracting && !this.isShowingTicket) {
+        if (!this.isInteracting) {
             // 키보드 입력 처리
             let hasKeyboardInput = false;
             if (this.cursors.left.isDown) {
@@ -392,28 +487,59 @@ class EntranceScene extends Phaser.Scene {
                 this.player.setVelocity(0);
                 this.player.anims.stop();
             }
+            
         } else {
             this.player.setVelocity(0);
             this.player.anims.stop();
         }
 
         this.player.setVelocity(velocityX, velocityY);
+        const playerBounds = this.player.getBounds();
+        const isStuck = this.wallRects.some(rect =>
+            playerBounds.left < rect.right - 5 &&
+            playerBounds.right > rect.left + 5 &&
+            playerBounds.top < rect.bottom - 5 &&
+            playerBounds.bottom > rect.top + 5
+        );
+        
+        if (isStuck) {
+            console.log('🧱 플레이어가 벽 안에 약간이라도 들어감 → 탈출 시도');
+        
+            const centerX = 512;
+            const centerY = 640;
+            const pushSpeed = 300;
+        
+            const dx = centerX - this.player.x;
+            const dy = centerY - this.player.y;
+            const angle = Math.atan2(dy, dx);
+        
+            this.player.setVelocity(Math.cos(angle) * pushSpeed, Math.sin(angle) * pushSpeed);
+        
+            this.player.anims.play(
+                Math.abs(dx) > Math.abs(dy)
+                    ? (dx > 0 ? 'walkRight' : 'walkLeft')
+                    : (dy > 0 ? 'walkDown' : 'walkUp'),
+                true
+            );
+        
+            this.isTouchInputActive = false;
+        }
+
     }
 
     collectTicketPiece(piece) {
         if (!piece.collected) {
             let dialogText;
-            if (this.collectedPieces+1 == this.totalPieces) {
-                dialogText = `(모든 티켓 조각을 모았습니다.직원에게 돌아가세요.)`;
+            if (this.collectedPieces + 1 == this.totalPieces) {
+                dialogText = `(모든 티켓 조각을 모았습니다.\n직원에게 돌아가세요.)`;
             } else {
-                dialogText = `(티켓 조각을 획득했습니다. ${this.collectedPieces + 1} / ${this.totalPieces}개 )`;
+                dialogText = `(티켓 조각을 획득했습니다.  →  ${this.collectedPieces + 1} / ${this.totalPieces} )`;
             }
             this.NormalShowDescription(dialogText, null);
-
+    
             piece.collected = true;
-            piece.destroy();
+            piece.destroy(); // 충돌 제거
             this.collectedPieces++;
-            console.log(`Collected piece ${piece.index + 1}. Total: ${this.collectedPieces}`);
         }
     }
 
@@ -422,7 +548,7 @@ class EntranceScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -437,7 +563,7 @@ class EntranceScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(950, 1230, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -456,7 +582,7 @@ class EntranceScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -472,7 +598,7 @@ class EntranceScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(950, 1230, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -512,7 +638,7 @@ class EntranceScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -526,7 +652,7 @@ class EntranceScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.ticketArrowIndicator = this.add.text(950, 1240, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -806,7 +932,7 @@ class EntranceScene extends Phaser.Scene {
         let dialogText;
         if (this.registry.get('hasReceivedTicket')==false) {
             if (this.registry.get('isFirstTalk')==true) {
-                dialogText = '안녕하세요. 하경님 맞으으시죠? 만나서 반가워요!\nJH님께서 저희 갤러리의 VIP 관람 티켓의 전달을 부탁하셨는데...\n하경님을 마중 가는 길에 실수로 잃어버렸지 뭐예요 ㅠㅠ..\n그래서 혹시 괜찮으시면..\n티켓 조각 찾는 거를 도와주실 수 있을까요??\n조각은 총 3개이고, 아마 여기 어딘가에 떨어져 있을거예요!';
+                dialogText = '안녕하세요. 하경님 맞으시죠?\n만나서 반가워요! 저는 JH갤러리 직원이에요.\nJH님께서 하경님께 입장 티켓의 전달을 부탁하셨는데...\n\n하경님을 마중 가는 길에 실수로 잃어버렸지 뭐예요 ㅠㅠ..\n그래서 혹시 괜찮으시면..\n티켓 조각 찾는 거를 도와주실 수 있을까요??\n조각은 총 3개이고, 아마 여기 어딘가에 떨어져 있을거예요!';
                 this.registry.set('isFirstTalk', false);  
             } else {
                 if (this.collectedPieces == 3) {
@@ -834,6 +960,18 @@ class EntranceScene extends Phaser.Scene {
         this.isInteracting = true;
         let dialogText;
         dialogText = '야옹!!!';
+        this.NormalShowDescription(dialogText, null);
+    }
+
+    handleTrashInteraction() {
+        console.log('쓰레기통 상호작용');
+        this.isInteracting = true;
+        let dialogText;
+        if (this.registry.get('hasReceivedTicket')==false) {
+            dialogText = '(쓰레기통이다.  안에는 아무것도 없는 것 같다.)';
+        } else {
+            dialogText = '... 설마 티켓을 버리실 건 아니죠?';
+        }
         this.NormalShowDescription(dialogText, null);
     }
 
@@ -936,6 +1074,16 @@ class ReceptionScene extends Phaser.Scene {
             this.physics.add.staticBody(315, 0, 410, 360),
 
         ];
+
+        this.wallRects = [
+            new Phaser.Geom.Rectangle(0, 0, 1210, 200),
+            new Phaser.Geom.Rectangle(0, 1210, 360, 70),
+            new Phaser.Geom.Rectangle(664, 1210, 360, 70),
+            new Phaser.Geom.Rectangle(0, 0, 150, 1280),
+            new Phaser.Geom.Rectangle(874, 0, 150, 1280),
+            new Phaser.Geom.Rectangle(315, 0, 410, 360),
+        ];
+
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 if (this.isTouchInputActive) {
@@ -944,6 +1092,7 @@ class ReceptionScene extends Phaser.Scene {
                     if (this.collisionCount >= 3) {
                         // 3번 이상 충돌 시 이동 중지
                         this.isTouchInputActive = false;
+                        this.targetPosition = { x: this.player.x, y: this.player.y }; // 💥 이동 목표 무효화
                         this.player.setVelocity(0);
                         this.player.anims.stop();
                         this.collisionCount = 0; // 충돌 카운트 초기화
@@ -1124,13 +1273,43 @@ class ReceptionScene extends Phaser.Scene {
         }
 
         this.player.setVelocity(velocityX, velocityY);
+        const playerBounds = this.player.getBounds();
+        const isStuck = this.wallRects.some(rect =>
+            playerBounds.left < rect.right - 5 &&
+            playerBounds.right > rect.left + 5 &&
+            playerBounds.top < rect.bottom - 5 &&
+            playerBounds.bottom > rect.top + 5
+        );
+        
+        if (isStuck) {
+            console.log('🧱 플레이어가 벽 안에 약간이라도 들어감 → 탈출 시도');
+        
+            const centerX = 512;
+            const centerY = 640;
+            const pushSpeed = 300;
+        
+            const dx = centerX - this.player.x;
+            const dy = centerY - this.player.y;
+            const angle = Math.atan2(dy, dx);
+        
+            this.player.setVelocity(Math.cos(angle) * pushSpeed, Math.sin(angle) * pushSpeed);
+        
+            this.player.anims.play(
+                Math.abs(dx) > Math.abs(dy)
+                    ? (dx > 0 ? 'walkRight' : 'walkLeft')
+                    : (dy > 0 ? 'walkDown' : 'walkUp'),
+                true
+            );
+        
+            this.isTouchInputActive = false;
+        }
     }
 
     showDescription(text, imageKey, callback) {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -1144,7 +1323,7 @@ class ReceptionScene extends Phaser.Scene {
         this.continueTyping = false;
 
         this.arrowIndicator = this.add.text(950, 1230, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -1512,6 +1691,36 @@ class GalleryScene extends Phaser.Scene {
 
         ];
 
+        this.wallRects = [  
+            new Phaser.Geom.Rectangle(0, 1270, 1170, 10),
+            // new Phaser.Geom.Rectangle(0, 1250, 360, 50),
+            // new Phaser.Geom.Rectangle(660, 1250, 350, 50),
+        
+            new Phaser.Geom.Rectangle(0, 965, 280, 70),
+            new Phaser.Geom.Rectangle(735, 965, 300, 70),
+        
+            new Phaser.Geom.Rectangle(280, 820, 50, 215),
+            new Phaser.Geom.Rectangle(685, 820, 50, 215),
+        
+            new Phaser.Geom.Rectangle(0, 820, 280, 50),
+            new Phaser.Geom.Rectangle(735, 820, 290, 50),
+        
+            new Phaser.Geom.Rectangle(295, 455, 50, 205),
+            new Phaser.Geom.Rectangle(675, 455, 50, 205),
+        
+            new Phaser.Geom.Rectangle(0, 600, 295, 60),
+            new Phaser.Geom.Rectangle(725, 600, 300, 60),
+        
+            new Phaser.Geom.Rectangle(0, 455, 295, 70),
+            new Phaser.Geom.Rectangle(725, 455, 300, 70),
+        
+            new Phaser.Geom.Rectangle(0, 240, 1025, 50),
+        
+            new Phaser.Geom.Rectangle(0, 0, 20, 1280),
+            new Phaser.Geom.Rectangle(1004, 0, 20, 1280)
+        ];
+        
+
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 if (this.isTouchInputActive) {
@@ -1520,6 +1729,7 @@ class GalleryScene extends Phaser.Scene {
                     if (this.collisionCount >= 3) {
                         // 3번 이상 충돌 시 이동 중지
                         this.isTouchInputActive = false;
+                        this.targetPosition = { x: this.player.x, y: this.player.y }; // 💥 이동 목표 무효화
                         this.player.setVelocity(0);
                         this.player.anims.stop();
                         this.collisionCount = 0; // 충돌 카운트 초기화
@@ -1700,6 +1910,41 @@ class GalleryScene extends Phaser.Scene {
         }
 
         this.player.setVelocity(velocityX, velocityY);
+        const playerBounds = this.player.getBounds();
+        const isStuck = this.wallRects.some(rect =>
+            playerBounds.left < rect.right - 5 &&
+            playerBounds.right > rect.left + 5 &&
+            playerBounds.top < rect.bottom - 5 &&
+            playerBounds.bottom > rect.top + 5
+        );
+        
+        if (isStuck) {
+            console.log('🧱 플레이어가 벽 안에 약간이라도 들어감 → 탈출 시도');
+        
+            const centerX = 512;
+            const centerY = 640;
+            const pushSpeed = 300;
+        
+            const dx = centerX - this.player.x;
+            const dy = centerY - this.player.y;
+            const angle = Math.atan2(dy, dx);
+        
+            this.player.setVelocity(Math.cos(angle) * pushSpeed, Math.sin(angle) * pushSpeed);
+        
+            this.player.anims.play(
+                Math.abs(dx) > Math.abs(dy)
+                    ? (dx > 0 ? 'walkRight' : 'walkLeft')
+                    : (dy > 0 ? 'walkDown' : 'walkUp'),
+                true
+            );
+        
+            this.isTouchInputActive = false;
+        }
+
+                // 💥 여기에 추가
+        // if (velocityX === 0 && velocityY === 0) {
+        //     this.player.anims.stop();
+        // }
     }
 
     // NPC 상호작용 처리 메서드 (갤러리용)
@@ -1758,7 +2003,7 @@ class GalleryScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
         }).setOrigin(0.5);
@@ -1771,7 +2016,7 @@ class GalleryScene extends Phaser.Scene {
         this.continueTyping = false;
 
         this.arrowIndicator = this.add.text(950, 1230, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -1796,7 +2041,7 @@ class GalleryScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -1811,7 +2056,7 @@ class GalleryScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(950, 1230, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -2130,6 +2375,13 @@ class RooftopScene extends Phaser.Scene {
             this.physics.add.staticBody(0, 400, 1100, 45), // 
 
         ];
+
+        this.wallRects = [
+            new Phaser.Geom.Rectangle(330, 0, 45, 1300), // 
+            new Phaser.Geom.Rectangle(650, 0, 45, 1300), // 
+            new Phaser.Geom.Rectangle(0, 400, 1100, 45), // 
+
+        ];
         this.walls.forEach(wall => {
             this.physics.add.collider(this.player, wall, () => {
                 if (this.isTouchInputActive) {
@@ -2138,6 +2390,7 @@ class RooftopScene extends Phaser.Scene {
                     if (this.collisionCount >= 3) {
                         // 3번 이상 충돌 시 이동 중지
                         this.isTouchInputActive = false;
+                        this.targetPosition = { x: this.player.x, y: this.player.y }; // 💥 이동 목표 무효화
                         this.player.setVelocity(0);
                         this.player.anims.stop();
                         this.collisionCount = 0; // 충돌 카운트 초기화
@@ -2258,6 +2511,36 @@ class RooftopScene extends Phaser.Scene {
         }
 
         this.player.setVelocity(velocityX, velocityY);
+        const playerBounds = this.player.getBounds();
+        const isStuck = this.wallRects.some(rect =>
+            playerBounds.left < rect.right - 5 &&
+            playerBounds.right > rect.left + 5 &&
+            playerBounds.top < rect.bottom - 5 &&
+            playerBounds.bottom > rect.top + 5
+        );
+        
+        if (isStuck) {
+            console.log('🧱 플레이어가 벽 안에 약간이라도 들어감 → 탈출 시도');
+        
+            const centerX = 512;
+            const centerY = 640;
+            const pushSpeed = 300;
+        
+            const dx = centerX - this.player.x;
+            const dy = centerY - this.player.y;
+            const angle = Math.atan2(dy, dx);
+        
+            this.player.setVelocity(Math.cos(angle) * pushSpeed, Math.sin(angle) * pushSpeed);
+        
+            this.player.anims.play(
+                Math.abs(dx) > Math.abs(dy)
+                    ? (dx > 0 ? 'walkRight' : 'walkLeft')
+                    : (dy > 0 ? 'walkDown' : 'walkUp'),
+                true
+            );
+        
+            this.isTouchInputActive = false;
+        }
     }
 
     // 대화창 표시 메서드
@@ -2265,7 +2548,7 @@ class RooftopScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -2280,7 +2563,7 @@ class RooftopScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(950, 1230, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -2308,7 +2591,7 @@ class RooftopScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -2323,7 +2606,7 @@ class RooftopScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.arrowIndicator = this.add.text(950, 1230, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 
@@ -2360,7 +2643,7 @@ class RooftopScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(0, 1280, 2048, 280, 0x000000, 0.8);
         const dialogText = this.add.text(512, 1210, '', { 
             fontFamily: 'Nanum Gothic',
-            fontSize: '30px', 
+            fontSize: '35px', 
             color: '#fff', 
             align: 'center', 
             // wordWrap: { width: 700 }
@@ -2374,7 +2657,7 @@ class RooftopScene extends Phaser.Scene {
 
         // ▼ 표시를 위한 텍스트 객체
         this.ticketArrowIndicator = this.add.text(950, 1240, '▼', {
-            fontSize: '30px',
+            fontSize: '35px',
             color: '#fff'
         }).setOrigin(0.5).setDepth(11).setVisible(false);
 

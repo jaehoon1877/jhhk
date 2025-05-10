@@ -59,7 +59,11 @@ class LoadingScene extends Phaser.Scene {
         this.load.image('painting9', 'assets/painting9.png');
         this.load.image('painting10', 'assets/painting10.png');
 
-        this.load.spritesheet('player', 'assets/player.png', { frameWidth: 48, frameHeight: 48 });
+        this.load.spritesheet('player', 'assets/characters/main_0.png', { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('entrance', 'assets/characters/entrance_0.png', { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('me', 'assets/characters/me_0.png', { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('reception', 'assets/characters/reception_0.png', { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('gallery', 'assets/characters/gallery_0.png', { frameWidth: 32, frameHeight: 48 });
         this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
         // this.load.audio('letterBgm', 'assets/letter_bgm.mp3'); // 편지 음악
     }
@@ -91,9 +95,9 @@ class EntranceScene extends Phaser.Scene {
         this.collisionCount = 0;
         this.add.image(512, 640, 'entranceBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
-        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setScale(2.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
-        this.player.setFrame(4);
+        this.player.setFrame(2);
 
         // BGM 재생
         if (this.sound.get('entranceBgm')) {
@@ -106,25 +110,25 @@ class EntranceScene extends Phaser.Scene {
         // 애니메이션 설정
         this.anims.create({
             key: 'walkLeft',
-            frames: this.anims.generateFrameNumbers('player', { start: 15, end: 17 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 5, end: 7 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkRight',
-            frames: this.anims.generateFrameNumbers('player', { start: 27, end: 29 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 9, end: 11 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkUp',
-            frames: this.anims.generateFrameNumbers('player', { start: 39, end: 41 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 13, end: 15 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkDown',
-            frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 1, end: 3 }),
             frameRate: 10,
             repeat: -1
         });
@@ -136,10 +140,10 @@ class EntranceScene extends Phaser.Scene {
         this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
 
         // NPC 생성 (위치: x: 400, y: 430)
-        this.npc = this.physics.add.sprite(512, 1010, 'player');
-        this.npc.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.npc = this.physics.add.sprite(512, 1010, 'entrance');
+        this.npc.setScale(2.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.npc.setImmovable(true);
-        this.npc.setFrame(59); // NPC 스프라이트 프레임
+        this.npc.setFrame(2); // NPC 스프라이트 프레임
 
         // 호랑이 동상1 상호작용
         this.tigerZone1 = this.add.zone(280, 580, 60, 160);
@@ -1014,9 +1018,9 @@ class ReceptionScene extends Phaser.Scene {
         this.collisionCount = 0;
         this.add.image(512, 640, 'receptionBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
-        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setScale(2.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
-        this.player.setFrame(4);
+        this.player.setFrame(2);
 
         // // BGM 재생
         // if (this.sound.get('receptionBgm')) {
@@ -1026,37 +1030,38 @@ class ReceptionScene extends Phaser.Scene {
         //     this.receptionBgm.play();
         // }
 
-        // NPC 생성
-        this.npc = this.physics.add.sprite(512, 250, 'player');
-        this.npc.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
-        this.npc.setImmovable(true);
-        this.npc.setFrame(52);
-
         // 애니메이션 설정
         this.anims.create({
             key: 'walkLeft',
-            frames: this.anims.generateFrameNumbers('player', { start: 15, end: 17 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 5, end: 7 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkRight',
-            frames: this.anims.generateFrameNumbers('player', { start: 27, end: 29 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 9, end: 11 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkUp',
-            frames: this.anims.generateFrameNumbers('player', { start: 39, end: 41 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 13, end: 15 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkDown',
-            frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 1, end: 3 }),
             frameRate: 10,
             repeat: -1
         });
+
+        // NPC 생성
+        this.npc = this.physics.add.sprite(508, 230, 'reception');
+        this.npc.setScale(2.5); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.npc.setImmovable(true);
+        this.npc.setFrame(2);
+
 
         // 입력 설정
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -1551,9 +1556,9 @@ class GalleryScene extends Phaser.Scene {
         this.collisionCount = 0;
         this.add.image(512, 640, 'galleryBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
-        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setScale(3); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
-        this.player.setFrame(4);
+        this.player.setFrame(2);
 
 
 
@@ -1568,25 +1573,25 @@ class GalleryScene extends Phaser.Scene {
         // 애니메이션 설정
         this.anims.create({
             key: 'walkLeft',
-            frames: this.anims.generateFrameNumbers('player', { start: 15, end: 17 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 5, end: 7 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkRight',
-            frames: this.anims.generateFrameNumbers('player', { start: 27, end: 29 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 9, end: 11 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkUp',
-            frames: this.anims.generateFrameNumbers('player', { start: 39, end: 41 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 13, end: 15 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkDown',
-            frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 1, end: 3 }),
             frameRate: 10,
             repeat: -1
         });
@@ -1598,10 +1603,10 @@ class GalleryScene extends Phaser.Scene {
         this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
         
         // NPC 이미지와 Zone 설정
-        this.galleryNpc = this.physics.add.sprite(50, 1200, 'player');  // 적절한 위치에
-        this.galleryNpc.setScale(2);
+        this.galleryNpc = this.physics.add.sprite(50, 1200, 'gallery');  // 적절한 위치에
+        this.galleryNpc.setScale(3);
         this.galleryNpc.setImmovable(true);
-        this.galleryNpc.setFrame(34); // 원하는 프레임
+        this.galleryNpc.setFrame(8); // 원하는 프레임
 
         this.galleryNpcZone = this.add.zone(50, 1200, 100, 100);
         this.physics.add.existing(this.galleryNpcZone);
@@ -2246,9 +2251,9 @@ class RooftopScene extends Phaser.Scene {
         this.collisionCount = 0;
         this.add.image(512, 640, 'rooftopBg');
         this.player = this.physics.add.sprite(this.playerStartX, this.playerStartY, 'player');
-        this.player.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.player.setScale(2.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.player.setCollideWorldBounds(true);
-        this.player.setFrame(4);
+        this.player.setFrame(2);
 
         // // BGM 재생
         // if (this.sound.get('entranceBgm')) {
@@ -2261,25 +2266,25 @@ class RooftopScene extends Phaser.Scene {
         // 애니메이션 설정
         this.anims.create({
             key: 'walkLeft',
-            frames: this.anims.generateFrameNumbers('player', { start: 15, end: 17 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 5, end: 7 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkRight',
-            frames: this.anims.generateFrameNumbers('player', { start: 27, end: 29 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 9, end: 11 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkUp',
-            frames: this.anims.generateFrameNumbers('player', { start: 39, end: 41 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 13, end: 15 }),
             frameRate: 10,
             repeat: -1
         });
         this.anims.create({
             key: 'walkDown',
-            frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
+            frames: this.anims.generateFrameNumbers('player', { start: 1, end: 3 }),
             frameRate: 10,
             repeat: -1
         });
@@ -2291,10 +2296,10 @@ class RooftopScene extends Phaser.Scene {
         this.isTouchInputActive = false; // 터치 입력 활성화 상태 추가
 
         // NPC 생성 (위치: x: 400, y: 430)
-        this.npc = this.physics.add.sprite(512, 500, 'player');
-        this.npc.setScale(2); // 플레이어 크기 조정 (필요에 따라 수정)
+        this.npc = this.physics.add.sprite(512, 500, 'me');
+        this.npc.setScale(2.5); // 플레이어 크기 조정 (필요에 따라 수정)
         this.npc.setImmovable(true);
-        this.npc.setFrame(1); // NPC 스프라이트 프레임
+        this.npc.setFrame(2); // NPC 스프라이트 프레임
 
         // NPC 상호작용 Zone
         this.npcZone = this.add.zone(512, 500, 150, 150);

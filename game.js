@@ -1,4 +1,68 @@
 
+class StartScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'StartScene' });
+    }
+
+    preload() {
+        this.load.image('startImage', 'assets/start.png'); // 실제 경로에 맞게 수정
+    }
+
+    create() {
+        this.inputEnabled = false;
+
+        // 배경 이미지
+        this.startImage = this.add.image(512, 640, 'startImage');
+        this.startImage.setAlpha(0);
+
+        // 텍스트 추가 (처음엔 숨김)
+        this.startText = this.add.text(512, 1150, 'Press any key to start', {
+            fontFamily: 'Pixel', // 원하는 픽셀폰트 설정
+            fontSize: '50px',
+            fontstyle: 'bold',
+            color: '#ffffff'
+        }).setOrigin(0.5).setAlpha(0);
+
+        // 이미지 페이드인
+        this.tweens.add({
+            targets: this.startImage,
+            alpha: 1,
+            duration: 1500,
+            onComplete: () => {
+                this.inputEnabled = true;
+                this.showStartText(); // 텍스트 깜빡임 시작
+            }
+        });
+
+        // 입력 이벤트 등록
+        this.input.keyboard.on('keydown', this.handleInput, this);
+        this.input.on('pointerdown', this.handleInput, this);
+    }
+
+    showStartText() {
+        // 깜빡이는 tween
+        this.tweens.add({
+            targets: this.startText,
+            alpha: { from: 1, to: 0 },
+            duration: 1000,
+            yoyo: true,
+            repeat: -1
+        });
+    }
+
+    handleInput() {
+        if (!this.inputEnabled || this.transitioning) return;
+        this.transitioning = true;
+
+        // 페이드 아웃 후 다음 Scene
+        this.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('LoadingScene');
+        });
+    }
+}
+
+
 class LoadingScene extends Phaser.Scene {
     constructor() {
         super({ key: 'LoadingScene' });
@@ -8,7 +72,7 @@ class LoadingScene extends Phaser.Scene {
         const { width, height } = this.cameras.main;
 
         // 텍스트 스타일
-        const loadingText = this.add.text(width / 2, height / 2 - 50, '로딩 중...', {
+        const loadingText = this.add.text(width / 2, height / 2 - 50, 'Now Loading...', {
             fontSize: '35px',
             color: '#ffffff',
             fontFamily: 'Nanum Gothic'
@@ -3082,7 +3146,7 @@ const config = {
         width: 1024,
         height: 1280
     },
-    scene: [LoadingScene,GalleryScene,EntranceScene, ReceptionScene,RooftopScene,EndingScene],
+    scene: [StartScene,LoadingScene,GalleryScene,EntranceScene, ReceptionScene,RooftopScene,EndingScene],
     callbacks: {  // 추가: 게임 시작 시 실행되는 콜백
         preBoot: (game) => {
             game.registry.set('hasReceivedTicket', false); // 게임 시작 시 한 번만 초기화

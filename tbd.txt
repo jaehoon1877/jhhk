@@ -1,6 +1,0 @@
-수정 필요 list
-
-1. 터치로 벽에 충돌하면 계속 안가고 멈춰야 함.
-2. dialog 폰트 같은거 수정
-3. gallery scene에서 touch로 상호작용 되도록 수정(zone 눌렀을때만)
-4. gallery scene에서 대화 방식 reception scene이랑 동일하게 수정

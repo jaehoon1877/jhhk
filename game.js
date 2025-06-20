@@ -129,6 +129,9 @@ class LoadingScene extends Phaser.Scene {
         this.load.spritesheet('reception', 'assets/characters/reception_0.png', { frameWidth: 32, frameHeight: 48 });
         this.load.spritesheet('gallery', 'assets/characters/gallery_0.png', { frameWidth: 32, frameHeight: 48 });
         this.load.audio('entranceBgm', 'assets/entrance_bgm.mp3');
+        this.load.audio('receptionBgm', 'assets/reception_bgm.mp3');
+        this.load.audio('galleryBgm', 'assets/gallery_bgm.mp3');
+        this.load.audio('rooftopBgm', 'assets/rooftop_bgm.mp3');
         // this.load.audio('letterBgm', 'assets/letter_bgm.mp3'); // 편지 음악
     }
 }
@@ -164,12 +167,12 @@ class EntranceScene extends Phaser.Scene {
         this.player.setFrame(2);
 
         // BGM 재생
-        if (this.sound.get('entranceBgm')) {
-            // this.sound.removeByKey('entranceBgm');
-        } else {
-            this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
-            this.entranceBgm.play();
+        if (this.sound.get('receptionBgm')) {
+            this.sound.removeByKey('receptionBgm');
         }
+        this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
+        this.entranceBgm.play();
+    
 
         // 애니메이션 설정
         this.anims.create({
@@ -1087,12 +1090,12 @@ class ReceptionScene extends Phaser.Scene {
         this.player.setFrame(2);
 
         // // BGM 재생
-        // if (this.sound.get('receptionBgm')) {
-        //     // this.sound.removeByKey('receptionBgm');
-        // } else {
-        //     this.receptionBgm = this.sound.add('receptionBgm', { volume: 0.5, loop: true });
-        //     this.receptionBgm.play();
-        // }
+        if (this.sound.get('entranceBgm')) {
+            this.sound.removeByKey('entranceBgm');
+        }
+        this.receptionBgm = this.sound.add('receptionBgm', { volume: 0.5, loop: true });
+        this.receptionBgm.play();
+
 
         // 애니메이션 설정
         this.anims.create({
@@ -1627,12 +1630,12 @@ class GalleryScene extends Phaser.Scene {
 
 
         // BGM 재생 (주석 처리 유지)
-        // if (this.sound.get('galleryBgm')) {
-        //     // this.sound.removeByKey('galleryBgm');
-        // } else {
-        //     this.galleryBgm = this.sound.add('galleryBgm', { volume: 0.5, loop: true });
-        //     this.galleryBgm.play();
-        // }
+        if (this.sound.get('receptionBgm')) {
+            this.sound.removeByKey('receptionBgm');
+        }
+        this.galleryBgm = this.sound.add('galleryBgm', { volume: 0.5, loop: true });
+        this.galleryBgm.play();
+
 
         // 애니메이션 설정
         this.anims.create({
@@ -2319,13 +2322,13 @@ class RooftopScene extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.setFrame(2);
 
-        // // BGM 재생
-        // if (this.sound.get('entranceBgm')) {
-        //     // this.sound.removeByKey('entranceBgm');
-        // } else {
-        //     this.entranceBgm = this.sound.add('entranceBgm', { volume: 0.5, loop: true });
-        //     this.entranceBgm.play();
-        // }
+        // BGM 재생
+        if (this.sound.get('galleryBgm')) {
+            this.sound.removeByKey('galleryBgm');
+        }
+        this.rooftopBgm = this.sound.add('rooftopBgm', { volume: 0.5, loop: true });
+        this.rooftopBgm.play();
+
 
         // 애니메이션 설정
         this.anims.create({
@@ -3097,9 +3100,9 @@ class RooftopScene extends Phaser.Scene {
     }
 
     shutdown() {
-        if (this.entranceBgm) {
-            this.entranceBgm.stop();
-            this.entranceBgm.destroy();
+        if (this.rooftopBgm) {
+            this.rooftopBgm.stop();
+            this.rooftopBgm.destroy();
         }
         if (this.interactionText) {
             this.interactionText.destroy();
